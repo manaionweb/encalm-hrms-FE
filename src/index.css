@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', 'sans-serif';
+
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+  --color-brand-800: #5b21b6;
+  --color-brand-900: #4c1d95;
+  --color-brand-950: #0B0A1F;
+
+  --color-mobile-blue-50: #eff6ff;
+  --color-mobile-blue-100: #dbeafe;
+  --color-mobile-blue-400: #60a5fa;
+  /* Added implicit 400 for gradient */
+  --color-mobile-blue-500: #3b82f6;
+  --color-mobile-blue-600: #2563eb;
+  --color-mobile-blue-700: #1d4ed8;
+  --color-mobile-blue-DEFAULT: #0056D2;
+
+  --color-sidebar: #1e1b4b;
+  --color-sidebar-active: #4c1d95;
+
+  --color-mint-50: #f0fdf9;
+  --color-mint-100: #ccfbf1;
+  --color-mint-200: #99f6e4;
+  --color-mint-300: #5eead4;
+  --color-mint-400: #2dd4bf;
+  --color-mint-500: #14b8a6;
+  --color-mint-600: #0d9488;
+}
+
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+
+  .dark body {
+    @apply bg-brand-950 text-white;
+  }
+}
+
+/* Custom utilities if needed */
+@layer utilities {
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
