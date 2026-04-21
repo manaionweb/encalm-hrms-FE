@@ -1,8 +1,5 @@
 import { LayoutDashboard, Clock, Users, UsersRound, CalendarDays, FileText, Settings, ClipboardList, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useRBAC } from '../hooks/useRBAC';
 import { useAuth } from '../context/AuthContext';
-import type { UserRole } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import vedaLogo from '../assets/veda-logo.png';
 import { useNavigate, useLocation } from 'react-router-dom';
 

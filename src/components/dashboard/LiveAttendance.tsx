@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const data = [
@@ -48,7 +48,7 @@ export default function LiveAttendance() {
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         />
                         <Bar dataKey="visitors" radius={[6, 6, 6, 6]} barSize={32}>
-                            {data.map((entry, index) => (
+                            {data.map((_, index) => (
                                 <Cell
                                     key={`cell-${index}`}
                                     fill={activeIndex === index ? '#8b5cf6' : '#e0e7ff'}

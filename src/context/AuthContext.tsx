@@ -25,8 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [error] = useState<string | null>(null);
 
     // Initialize from local storage to persist login across refreshes
     useEffect(() => {
@@ -34,7 +33,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (storedUser) {
             setUser(JSON.parse(storedUser));
         }
-        setLoading(false);
     }, []);
 
     const login = async (email: string, role: UserRole) => {

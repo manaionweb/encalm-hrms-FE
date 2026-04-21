@@ -6,25 +6,7 @@ export default function AddEmployee() {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
 
-    // Form State
-    const [formData, setFormData] = useState({
-        // Personal
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        role: '',
-        department: '',
-        location: '',
-        // Statutory
-        uan: '',
-        esic: '',
-        pan: '',
-        aadhaar: '',
-        bankName: '',
-        accountNumber: '',
-        ifsc: '',
-    });
+
 
     const steps = [
         { id: 1, title: 'Personal Details', icon: User },
