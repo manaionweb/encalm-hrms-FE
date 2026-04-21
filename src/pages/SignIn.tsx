@@ -15,8 +15,16 @@ export default function SignIn() {
     const { setTheme } = useTheme();
     const { login, error } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [email, setEmail] = useState('admin@example.com');
     const [password, setPassword] = useState('password123'); // Default for demo
+    const [isForgotMode, setIsForgotMode] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotMessage, setForgotMessage] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,6 +36,63 @@ export default function SignIn() {
         } catch (err) {
             console.error("Login failed", err);
             // Error is handled in context and exposed via error prop if needed on UI
+        }
+    };
+
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setForgotMessage('');
+
+        if (!forgotEmail.trim()) {
+            setForgotMessage('Please enter your email');
+            return;
+        }
+
+        if (!newPassword.trim() || !confirmPassword.trim()) {
+            setForgotMessage('Please enter password');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            setForgotMessage('Passwords do not match');
+            return;
+        }
+
+        try {
+            setIsUpdatingPassword(true);
+
+            const response = await fetch('/api/auth/reset-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: forgotEmail.trim(),
+                    newPassword: newPassword,
+                    confirmPassword: confirmPassword,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data?.message || 'Failed to update password');
+            }
+
+            setForgotMessage(data?.message || 'Password updated successfully');
+
+            setTimeout(() => {
+                setIsForgotMode(false);
+                setForgotMessage('');
+                setForgotEmail('');
+                setNewPassword('');
+                setConfirmPassword('');
+            }, 1500);
+        } catch (err: any) {
+            console.error('Forgot password failed', err);
+            setForgotMessage(err.message || 'Something went wrong');
+        } finally {
+            setIsUpdatingPassword(false);
         }
     };
 
@@ -90,66 +155,168 @@ export default function SignIn() {
                                 className="h-16 w-auto object-contain"
                             />
                         </div>
+                        {!isForgotMode ? (
+                            <form onSubmit={handleLogin} className="space-y-5">
 
-                        <form onSubmit={handleLogin} className="space-y-5">
-
-                            {/* Username Input */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wide">Username or E-mail</label>
-                                <input
-                                    type="text"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all placeholder:text-gray-300 shadow-sm"
-                                    placeholder="Enter your username"
-                                />
-                            </div>
-
-                            {/* Password Input */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wide">Password</label>
-                                <div className="relative group">
+                                {/* Username Input */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wide">Username or E-mail</label>
                                     <input
-                                        type={showPassword ? "text" : "password"}
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all placeholder:text-gray-300 shadow-sm"
-                                        placeholder="Enter your password"
+                                        type="text"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all placeholder:text-gray-300 shadow-sm"
+                                        placeholder="Enter your username"
                                     />
+                                </div>
+
+                                {/* Password Input */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wide">Password</label>
+                                    <div className="relative group">
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all placeholder:text-gray-300 shadow-sm"
+                                            placeholder="Enter your password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
+                                    {/* Error Message */}
+                                    {error && <p className="text-[10px] text-red-500 font-medium mt-1 ml-1">{error}</p>}
+                                </div>
+
+                                {/* Submit Button */}
+                                <div className="pt-2">
                                     <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        type="submit"
+                                        className="w-full py-3 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-bold text-lg rounded-full shadow-lg shadow-brand-500/30 active:scale-[0.98] transition-all transform"
                                     >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        Log In
                                     </button>
                                 </div>
-                                {/* Error Message */}
-                                {error && <p className="text-[10px] text-red-500 font-medium mt-1 ml-1">{error}</p>}
-                            </div>
 
-                            {/* Submit Button */}
-                            <div className="pt-2">
+                            </form>
+                        ) : (
+                            <form onSubmit={handleForgotPassword} className="space-y-5">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wide">
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={forgotEmail}
+                                        onChange={(e) => setForgotEmail(e.target.value)}
+                                        className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all placeholder:text-gray-300 shadow-sm"
+                                        placeholder="Enter your email"
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wide">
+                                        New Password
+                                    </label>
+                                    <div className="relative group">
+                                        <input
+                                            type={showNewPassword ? "text" : "password"}
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all placeholder:text-gray-300 shadow-sm"
+                                            placeholder="Enter new password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNewPassword(!showNewPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wide">
+                                        Confirm Password
+                                    </label>
+                                    <div className="relative group">
+                                        <input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all placeholder:text-gray-300 shadow-sm"
+                                            placeholder="Confirm password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {forgotMessage && (
+                                    <p className="text-xs text-brand-600 font-medium ml-1">
+                                        {forgotMessage}
+                                    </p>
+                                )}
+
+                                <div className="pt-2">
+                                    <button
+                                        type="submit"
+                                        disabled={isUpdatingPassword}
+                                        className="w-full py-3 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-bold text-lg rounded-full shadow-lg shadow-brand-500/30 active:scale-[0.98] transition-all transform disabled:opacity-70 disabled:cursor-not-allowed"
+                                    >
+                                        {isUpdatingPassword ? 'Updating...' : 'Update Password'}
+                                    </button>
+                                </div>
+
                                 <button
-                                    type="submit"
-                                    className="w-full py-3 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-bold text-lg rounded-full shadow-lg shadow-brand-500/30 active:scale-[0.98] transition-all transform"
+                                    type="button"
+                                    onClick={() => {
+                                        setIsForgotMode(false);
+                                        setForgotMessage('');
+                                    }}
+                                    className="w-full text-sm text-gray-500 hover:text-brand-500 transition-colors"
                                 >
-                                    Log In
+                                    Back to Login
                                 </button>
-                            </div>
-
-                        </form>
+                            </form>
+                        )}
 
                         {/* Footer Links */}
-                        <div className="text-center space-y-3 pt-1">
-                            <button className="text-brand-500 font-bold hover:underline text-xs md:text-sm block w-full">
-                                Forget Password?
-                            </button>
+                        {!isForgotMode && (
+                            <div className="text-center space-y-3 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsForgotMode(true);
+                                        setForgotMessage('');
+                                        setForgotEmail(email);
+                                        setNewPassword('');
+                                        setConfirmPassword('');
+                                    }}
+                                    className="text-brand-500 font-bold hover:underline text-xs md:text-sm block w-full"
+                                >
+                                    Forget Password?
+                                </button>
 
-                            <p className="text-gray-400 text-xs md:text-sm">
-                                Do Not Have Account? <button className="text-brand-500 font-bold hover:underline ml-1">Sign Up</button>
-                            </p>
-                        </div>
+                                <p className="text-gray-400 text-xs md:text-sm">
+                                    Do Not Have Account?{" "}
+                                    <button className="text-brand-500 font-bold hover:underline ml-1">
+                                        Sign Up
+                                    </button>
+                                </p>
+                            </div>
+                        )}
 
                     </div>
                 </div>
