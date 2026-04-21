@@ -5,7 +5,7 @@ import axios from 'axios';
 
 // API helper
 const api = axios.create({
-    baseURL: 'http://localhost:3001/api', // Backend URL
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api', // Backend URL
     headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
     }
