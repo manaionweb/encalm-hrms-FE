@@ -20,7 +20,7 @@ export default function Attendance() {
     const [selectedMonth, setSelectedMonth] = useState(new Date());
 
     // Mock Attendance History for the selected month
-    const [attendanceHistory, setAttendanceHistory] = useState<DailyLog[]>([
+    const [attendanceHistory] = useState<DailyLog[]>([
         { date: '2025-12-01', status: 'Weekend' },
         { date: '2025-12-02', inTime: '09:05', outTime: '18:10', status: 'Present', hours: '9h 5m' },
         { date: '2025-12-03', inTime: '09:00', outTime: '18:00', status: 'Present', hours: '9h 0m' },

@@ -44,7 +44,7 @@ export default function AddEmployee() {
                     <p className="text-gray-500 dark:text-gray-400 mb-8">Complete the following steps to add a new team member.</p>
 
                     <div className="flex items-center justify-between max-w-2xl mx-auto">
-                        {steps.map((step, idx) => (
+                        {steps.map((step) => (
                             <div key={step.id} className="flex flex-col items-center relative z-10">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${currentStep >= step.id
                                         ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/30'

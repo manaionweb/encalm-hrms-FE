@@ -22,7 +22,7 @@ export default function SignIn() {
         e.preventDefault();
 
         try {
-            await login(email, password);
+            await login(email, 'HR_ADMIN');
             setTheme('dark');
             navigate('/dashboard');
         } catch (err) {

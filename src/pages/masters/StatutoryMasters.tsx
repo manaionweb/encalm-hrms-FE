@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BadgeIndianRupee, Scale, Calculator, School, Save, Plus, Trash2 } from 'lucide-react';
+import { BadgeIndianRupee, Scale, School, Save, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 

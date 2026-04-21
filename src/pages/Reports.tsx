@@ -1,5 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FileText, Download, TrendingUp, Users, DollarSign, Calendar } from 'lucide-react';
+import { FileText, TrendingUp, Users, DollarSign, Calendar } from 'lucide-react';
 
 const ATTENDANCE_DATA = [
     { name: 'Mon', present: 85, absent: 5, late: 10 },
@@ -110,7 +110,7 @@ export default function Reports() {
                                     paddingAngle={5}
                                     dataKey="value"
                                 >
-                                    {PAYROLL_DATA.map((entry, index) => (
+                                    {PAYROLL_DATA.map((_, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>

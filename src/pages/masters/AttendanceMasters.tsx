@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock, Briefcase, CalendarClock, Settings, Save, Plus, Trash2 } from 'lucide-react';
+import { Clock, Settings, Save, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
