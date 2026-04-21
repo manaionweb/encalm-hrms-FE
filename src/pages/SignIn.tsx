@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-// @ts-ignore
 import officeWorkerImg from '../assets/office-worker-3d.png';
 import vedaLogo from '../assets/veda-logo.png';
 
@@ -11,12 +10,12 @@ import { useAuth } from '../context/AuthContext';
 
 
 export default function SignIn() {
+    const [isOtpSent, setIsOtpSent] = useState(false);
+    const [otp, setOtp] = useState('');
     const navigate = useNavigate();
     const { setTheme } = useTheme();
     const { login, error } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
-    const [showNewPassword, setShowNewPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [email, setEmail] = useState('admin@example.com');
     const [password, setPassword] = useState('password123'); // Default for demo
     const [isForgotMode, setIsForgotMode] = useState(false);
@@ -24,10 +23,37 @@ export default function SignIn() {
     const [forgotMessage, setForgotMessage] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const generateCaptcha = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let captcha = '';
+        for (let i = 0; i < 5; i++) {
+            captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return captcha;
+    };
+    const [captcha, setCaptcha] = useState(generateCaptcha());
+    const [captchaInput, setCaptchaInput] = useState('');
+    const [forgotCaptcha, setForgotCaptcha] = useState(generateCaptcha());
+    const [forgotCaptchaInput, setForgotCaptchaInput] = useState('');
     const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
+    const refreshCaptcha = () => {
+        setCaptcha(generateCaptcha());
+        setCaptchaInput('');
+    };
+
+    const refreshForgotCaptcha = () => {
+        setForgotCaptcha(generateCaptcha());
+        setForgotCaptchaInput('');
+    };
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (captchaInput !== captcha) {
+            alert("Invalid captcha");
+            refreshCaptcha();
+            return;
+        }
+
 
         try {
             await login(email, password);
@@ -35,7 +61,7 @@ export default function SignIn() {
             navigate('/dashboard');
         } catch (err) {
             console.error("Login failed", err);
-            // Error is handled in context and exposed via error prop if needed on UI
+
         }
     };
 
@@ -44,54 +70,77 @@ export default function SignIn() {
         setForgotMessage('');
 
         if (!forgotEmail.trim()) {
-            setForgotMessage('Please enter your email');
+            setForgotMessage('Enter email');
             return;
         }
 
-        if (!newPassword.trim() || !confirmPassword.trim()) {
-            setForgotMessage('Please enter password');
+        if (forgotCaptchaInput !== forgotCaptcha) {
+            setForgotMessage("Invalid captcha");
+            refreshForgotCaptcha();
+            return;
+        }
+
+        // 🟢 STEP 1: SEND OTP
+        if (!isOtpSent) {
+            try {
+                const res = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: forgotEmail }),
+                });
+
+                if (!res.ok) throw new Error("Failed to send OTP");
+
+                setIsOtpSent(true);
+                setForgotMessage("OTP sent to email");
+            } catch {
+                setForgotMessage("Error sending OTP");
+            }
+
+            return; // stop here
+        }
+
+        // 🟢 STEP 2: UPDATE PASSWORD
+        if (!otp) {
+            setForgotMessage("Enter OTP");
+            return;
+        }
+
+        if (!newPassword || !confirmPassword) {
+            setForgotMessage("Enter password");
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            setForgotMessage('Passwords do not match');
+            setForgotMessage("Passwords not match");
             return;
         }
+        setIsUpdatingPassword(true);
 
         try {
-            setIsUpdatingPassword(true);
-
-            const response = await fetch('/api/auth/reset-password', {
+            const res = await fetch('/api/auth/reset-password', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    email: forgotEmail.trim(),
+                    email: forgotEmail,
+                    otp: otp,
                     newPassword: newPassword,
-                    confirmPassword: confirmPassword,
                 }),
             });
 
-            const data = await response.json();
+            if (!res.ok) throw new Error("Failed");
 
-            if (!response.ok) {
-                throw new Error(data?.message || 'Failed to update password');
-            }
-
-            setForgotMessage(data?.message || 'Password updated successfully');
+            setForgotMessage("Password updated");
 
             setTimeout(() => {
                 setIsForgotMode(false);
-                setForgotMessage('');
-                setForgotEmail('');
-                setNewPassword('');
-                setConfirmPassword('');
+                setIsOtpSent(false);
             }, 1500);
-        } catch (err: any) {
-            console.error('Forgot password failed', err);
-            setForgotMessage(err.message || 'Something went wrong');
-        } finally {
+
+        } catch {
+            setForgotMessage("Error updating password");
+        }
+        finally {
             setIsUpdatingPassword(false);
         }
     };
@@ -105,7 +154,7 @@ export default function SignIn() {
             <div className="absolute bottom-[-10%] left-[-10%] w-[50vh] h-[50vh] bg-purple-600/20 rounded-full blur-3xl z-0 pointer-events-none"></div>
 
             {/* Card Container */}
-            <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-5xl min-h-[600px] flex flex-col md:flex-row overflow-hidden relative z-10 animate-fade-in-up">
+            <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col md:flex-row overflow-hidden relative z-10 animate-fade-in-up">
 
                 {/* Left Panel - Illustration & Background */}
                 <div className="md:w-1/2 bg-brand-50/50 relative overflow-visible flex flex-col justify-between p-8 md:p-12">
@@ -139,7 +188,7 @@ export default function SignIn() {
                 </div>
 
                 {/* Right Panel - Login Form */}
-                <div className="md:w-1/2 bg-white flex flex-col justify-center items-center p-8 md:p-14 relative z-10">
+                <div className="md:w-1/2 bg-white flex flex-col justify-center items-center p-6 md:p-8 overflow-hidden relative z-10">
 
                     {/* Decorative Floating Circles for Right Panel */}
                     <div className="absolute top-12 right-12 w-4 h-4 border-2 border-brand-200 rounded-full"></div>
@@ -156,7 +205,7 @@ export default function SignIn() {
                             />
                         </div>
                         {!isForgotMode ? (
-                            <form onSubmit={handleLogin} className="space-y-5">
+                            <form onSubmit={handleLogin} className="space-y-3">
 
                                 {/* Username Input */}
                                 <div className="space-y-1.5">
@@ -192,6 +241,33 @@ export default function SignIn() {
                                     {/* Error Message */}
                                     {error && <p className="text-[10px] text-red-500 font-medium mt-1 ml-1">{error}</p>}
                                 </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wide">
+                                        Captcha
+                                    </label>
+
+                                    <div className="flex gap-2 items-center">
+                                        <div className="px-4 py-3 bg-gray-200 text-black rounded-xl font-bold tracking-widest shadow-inner">                                        {captcha}
+                                        </div>
+
+                                        {/* 🔄 Refresh Button */}
+                                        <button
+                                            type="button"
+                                            onClick={refreshCaptcha}
+                                            className="px-3 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-100 transition"
+                                        >
+                                            🔄
+                                        </button>
+
+                                        <input
+                                            type="text"
+                                            value={captchaInput}
+                                            onChange={(e) => setCaptchaInput(e.target.value)}
+                                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400 text-black"
+                                            placeholder="Enter captcha"
+                                        />
+                                    </div>
+                                </div>
 
                                 {/* Submit Button */}
                                 <div className="pt-2">
@@ -205,96 +281,99 @@ export default function SignIn() {
 
                             </form>
                         ) : (
-                            <form onSubmit={handleForgotPassword} className="space-y-5">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wide">
-                                        Email
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={forgotEmail}
-                                        onChange={(e) => setForgotEmail(e.target.value)}
-                                        className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all placeholder:text-gray-300 shadow-sm"
-                                        placeholder="Enter your email"
-                                    />
-                                </div>
+                            <form onSubmit={handleForgotPassword} className="space-y-3">
 
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wide">
-                                        New Password
-                                    </label>
-                                    <div className="relative group">
-                                        <input
-                                            type={showNewPassword ? "text" : "password"}
-                                            value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
-                                            className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all placeholder:text-gray-300 shadow-sm"
-                                            placeholder="Enter new password"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowNewPassword(!showNewPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                                        >
-                                            {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                    </div>
-                                </div>
+                                {/* STEP 1: BEFORE OTP */}
+                                {!isOtpSent && (
+                                    <>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-bold text-gray-500">Email</label>
+                                            <input
+                                                type="email"
+                                                value={forgotEmail}
+                                                onChange={(e) => setForgotEmail(e.target.value)}
+                                                className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all placeholder:text-gray-300 shadow-sm"
+                                            />
+                                        </div>
 
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-gray-500 ml-1 uppercase tracking-wide">
-                                        Confirm Password
-                                    </label>
-                                    <div className="relative group">
-                                        <input
-                                            type={showConfirmPassword ? "text" : "password"}
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all placeholder:text-gray-300 shadow-sm"
-                                            placeholder="Confirm password"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                                        >
-                                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                    </div>
-                                </div>
+                                        {/* Captcha */}
+                                        <div className="flex gap-2 items-center">
+                                            <div className="px-4 py-3 bg-gray-200 text-black rounded-xl font-bold tracking-widest shadow-inner">
+                                                {forgotCaptcha}
+                                            </div>
 
-                                {forgotMessage && (
-                                    <p className="text-xs text-brand-600 font-medium ml-1">
-                                        {forgotMessage}
-                                    </p>
+                                            <button
+                                                type="button"
+                                                onClick={refreshForgotCaptcha}
+                                                className="px-3 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-100 transition"
+                                            >
+                                                🔄
+                                            </button>
+
+                                            <input
+                                                value={forgotCaptchaInput}
+                                                onChange={(e) => setForgotCaptchaInput(e.target.value)}
+                                                placeholder="Enter captcha"
+                                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400 text-black"
+                                            />
+                                        </div>
+                                    </>
                                 )}
 
-                                <div className="pt-2">
-                                    <button
-                                        type="submit"
-                                        disabled={isUpdatingPassword}
-                                        className="w-full py-3 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-bold text-lg rounded-full shadow-lg shadow-brand-500/30 active:scale-[0.98] transition-all transform disabled:opacity-70 disabled:cursor-not-allowed"
-                                    >
-                                        {isUpdatingPassword ? 'Updating...' : 'Update Password'}
-                                    </button>
-                                </div>
+                                {/* STEP 2: AFTER OTP */}
+                                {isOtpSent && (
+                                    <>
+                                        <div>
+                                            <label>OTP</label>
+                                            <input
+                                                value={otp}
+                                                onChange={(e) => setOtp(e.target.value)}
+                                                className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all shadow-sm"
+                                            />
+                                        </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setIsForgotMode(false);
-                                        setForgotMessage('');
-                                    }}
-                                    className="w-full text-sm text-gray-500 hover:text-brand-500 transition-colors"
-                                >
-                                    Back to Login
+                                        <div>
+                                            <label>New Password</label>
+                                            <input
+                                                type="password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all shadow-sm"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label>Confirm Password</label>
+                                            <input
+                                                type="password"
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 rounded-xl text-gray-700 font-medium transition-all shadow-sm"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                <button type="submit" className="w-full py-3 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-bold text-lg rounded-full shadow-lg shadow-brand-500/30 active:scale-[0.98] transition-all transform">
+                                    {!isOtpSent ? 'Send OTP' : 'Update Password'}
                                 </button>
+                                {isForgotMode && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsForgotMode(false);
+                                            setIsOtpSent(false);
+                                        }}
+                                        className="w-full text-brand-500 font-bold hover:underline text-sm mt-2"
+                                    >
+                                        Back to Login
+                                    </button>
+                                )}
+
                             </form>
                         )}
-
-                        {/* Footer Links */}
                         {!isForgotMode && (
-                            <div className="text-center space-y-3 pt-1">
+                            <div className="text-center space-y-5 pt-1">
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -303,6 +382,7 @@ export default function SignIn() {
                                         setForgotEmail(email);
                                         setNewPassword('');
                                         setConfirmPassword('');
+                                        setForgotCaptcha(generateCaptcha());
                                     }}
                                     className="text-brand-500 font-bold hover:underline text-xs md:text-sm block w-full"
                                 >
