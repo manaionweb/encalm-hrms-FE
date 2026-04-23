@@ -16,12 +16,14 @@ interface User {
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
-    login: (email: string, role: UserRole) => Promise<void>;
+    login: (email: string, password?: string) => Promise<void>;
     logout: () => void;
     error: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const API_BASE_URL = 'http://localhost:3002/api';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -32,23 +34,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const storedUser = localStorage.getItem('encalm_user');
         if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            try {
+                setUser(JSON.parse(storedUser));
+            } catch (e) {
+                console.error('Failed to parse stored user');
+                localStorage.removeItem('encalm_user');
+            }
         }
         setLoading(false);
     }, []);
 
-    const login = async (email: string, role: UserRole) => {
-        // Mock login
-        const userData: User = {
-            id: 1, // Changed to number to match interface
-            name: 'Demo User',
-            email,
-            role,
-            tenantId: 'tenant-1',
-            accessibleModules: ['DASHBOARD', 'ATTENDANCE', 'EMPLOYEE', 'TEAM', 'LEAVE', 'REPORTS', 'MASTERS', 'TASK']
-        };
-        setUser(userData);
-        localStorage.setItem('encalm_user', JSON.stringify(userData));
+    const login = async (email: string, password?: string) => {
+        setError(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
+
+            const userData: User = {
+                ...data.user,
+                token: data.token
+            };
+
+            setUser(userData);
+            localStorage.setItem('encalm_user', JSON.stringify(userData));
+        } catch (err: any) {
+            setError(err.message);
+            throw err;
+        }
     };
 
     const logout = () => {
@@ -64,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logout,
             error
         }}>
-            {children}
+            {!loading && children}
         </AuthContext.Provider>
     );
 }
@@ -76,3 +99,4 @@ export function useAuth() {
     }
     return context;
 }
+

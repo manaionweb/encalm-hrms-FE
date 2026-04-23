@@ -16,8 +16,8 @@ export default function SignIn() {
     const { setTheme } = useTheme();
     const { login, error } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
-    const [email, setEmail] = useState('admin@example.com');
-    const [password, setPassword] = useState('password123'); // Default for demo
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [isForgotMode, setIsForgotMode] = useState(false);
     const [forgotEmail, setForgotEmail] = useState('');
     const [forgotMessage, setForgotMessage] = useState('');
