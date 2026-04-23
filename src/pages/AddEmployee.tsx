@@ -1,12 +1,30 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, ChevronRight, Upload, FileText, User, CreditCard } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, Upload, FileText, User, CreditCard, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import api from '../utils/api';
 
 export default function AddEmployee() {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
+    const [loading, setLoading] = useState(false);
 
-
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        department: '',
+        title: '',
+        pan: '',
+        aadhaar: '',
+        uan: '',
+        esic: '',
+        bankName: '',
+        ifsc: '',
+        accountNumber: '',
+        joiningDate: new Date().toISOString().split('T')[0]
+    });
 
     const steps = [
         { id: 1, title: 'Personal Details', icon: User },
@@ -14,12 +32,31 @@ export default function AddEmployee() {
         { id: 3, title: 'Documents', icon: FileText },
     ];
 
-    const handleNext = () => {
-        if (currentStep < 3) setCurrentStep(c => c + 1);
-        else {
-            // Submit
-            alert('Employee Onboarded Successfully!');
-            navigate('/employee');
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleNext = async () => {
+        if (currentStep < 3) {
+            setCurrentStep(c => c + 1);
+        } else {
+            // Final Submit
+            setLoading(true);
+            try {
+                const submissionData = {
+                    ...formData,
+                    name: `${formData.firstName} ${formData.lastName}`.trim(),
+                };
+                await api.post('/employee', submissionData);
+                toast.success('Employee Onboarded Successfully!');
+                navigate('/employee');
+            } catch (error: any) {
+                console.error('Onboarding error:', error);
+                toast.error(error.response?.data?.message || 'Failed to onboard employee');
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -33,6 +70,7 @@ export default function AddEmployee() {
             <button
                 onClick={() => navigate('/employee')}
                 className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-6 transition-colors"
+                disabled={loading}
             >
                 <ArrowLeft size={20} /> Back to List
             </button>
@@ -43,12 +81,12 @@ export default function AddEmployee() {
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Onboard New Employee</h1>
                     <p className="text-gray-500 dark:text-gray-400 mb-8">Complete the following steps to add a new team member.</p>
 
-                    <div className="flex items-center justify-between max-w-2xl mx-auto">
+                    <div className="flex items-center justify-between max-w-2xl mx-auto relative">
                         {steps.map((step) => (
                             <div key={step.id} className="flex flex-col items-center relative z-10">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${currentStep >= step.id
-                                        ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/30'
-                                        : 'bg-gray-200 dark:bg-white/10 text-gray-400'
+                                    ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/30'
+                                    : 'bg-gray-200 dark:bg-white/10 text-gray-400'
                                     }`}>
                                     {currentStep > step.id ? <Check size={20} /> : <step.icon size={18} />}
                                 </div>
@@ -59,12 +97,11 @@ export default function AddEmployee() {
                             </div>
                         ))}
                         {/* Progress Line */}
-                        <div className="absolute top-[164px] left-0 w-full h-0.5 bg-gray-200 dark:bg-white/10 -z-0 hidden md:block">
+                        <div className="absolute top-5 left-0 w-full h-0.5 bg-gray-200 dark:bg-white/10 -z-0 hidden md:block">
                             <div
-                                className="h-full bg-brand-500 transition-all duration-500 md:w-1/2 mx-auto"
+                                className="h-full bg-brand-500 transition-all duration-500"
                                 style={{
-                                    width: currentStep === 1 ? '33%' : currentStep === 2 ? '66%' : '100%',
-                                    // This is a rough visual approximation for the line connector
+                                    width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%',
                                 }}
                             ></div>
                         </div>
@@ -77,36 +114,75 @@ export default function AddEmployee() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase">First Name</label>
-                                <input type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white" placeholder="John" />
+                                <input
+                                    name="firstName"
+                                    value={formData.firstName}
+                                    onChange={handleInputChange}
+                                    type="text"
+                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white"
+                                    placeholder="John"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase">Last Name</label>
-                                <input type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white" placeholder="Doe" />
+                                <input
+                                    name="lastName"
+                                    value={formData.lastName}
+                                    onChange={handleInputChange}
+                                    type="text"
+                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white"
+                                    placeholder="Doe"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase">Email Address</label>
-                                <input type="email" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white" placeholder="john.doe@encalm.com" />
+                                <input
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    type="email"
+                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white"
+                                    placeholder="john.doe@encalm.com"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase">Phone Number</label>
-                                <input type="tel" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white" placeholder="+91 98765 43210" />
+                                <input
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleInputChange}
+                                    type="tel"
+                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white"
+                                    placeholder="+91 98765 43210"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase">Department</label>
-                                <select className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white">
-                                    <option>Select Department</option>
-                                    <option>Engineering</option>
-                                    <option>Design</option>
-                                    <option>Product Management</option>
-                                    <option>Sales & Marketing</option>
-                                    <option>Human Resources</option>
-                                    <option>Finance</option>
-                                    <option>Operations</option>
+                                <select
+                                    name="department"
+                                    value={formData.department}
+                                    onChange={handleInputChange}
+                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white"
+                                >
+                                    <option value="">Select Department</option>
+                                    <option value="Engineering">Engineering</option>
+                                    <option value="Design">Design</option>
+                                    <option value="Product">Product</option>
+                                    <option value="Sales">Sales</option>
+                                    <option value="HR">HR</option>
+                                    <option value="Operations">Operations</option>
                                 </select>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase">Role / Designation</label>
-                                <input type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white" placeholder="e.g. Senior Developer" />
+                                <input
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleInputChange}
+                                    type="text"
+                                    className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white"
+                                    placeholder="e.g. Senior Developer"
+                                />
                             </div>
                         </div>
                     )}
@@ -118,19 +194,45 @@ export default function AddEmployee() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase">PAN Number</label>
-                                        <input type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white uppercase font-mono" placeholder="ABCDE1234F" />
+                                        <input
+                                            name="pan"
+                                            value={formData.pan}
+                                            onChange={handleInputChange}
+                                            type="text"
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white uppercase font-mono"
+                                            placeholder="ABCDE1234F"
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase">Aadhaar Number</label>
-                                        <input type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white font-mono" placeholder="XXXX XXXX XXXX" />
+                                        <input
+                                            name="aadhaar"
+                                            value={formData.aadhaar}
+                                            onChange={handleInputChange}
+                                            type="text"
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white font-mono"
+                                            placeholder="XXXX XXXX XXXX"
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase">UAN (PF)</label>
-                                        <input type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white" />
+                                        <input
+                                            name="uan"
+                                            value={formData.uan}
+                                            onChange={handleInputChange}
+                                            type="text"
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white"
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase">ESIC Number</label>
-                                        <input type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white" />
+                                        <input
+                                            name="esic"
+                                            value={formData.esic}
+                                            onChange={handleInputChange}
+                                            type="text"
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -140,15 +242,35 @@ export default function AddEmployee() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase">Bank Name</label>
-                                        <input type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white" placeholder="e.g. HDFC Bank" />
+                                        <input
+                                            name="bankName"
+                                            value={formData.bankName}
+                                            onChange={handleInputChange}
+                                            type="text"
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white"
+                                            placeholder="e.g. HDFC Bank"
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase">IFSC Code</label>
-                                        <input type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white uppercase font-mono" placeholder="HDFC0001234" />
+                                        <input
+                                            name="ifsc"
+                                            value={formData.ifsc}
+                                            onChange={handleInputChange}
+                                            type="text"
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white uppercase font-mono"
+                                            placeholder="HDFC0001234"
+                                        />
                                     </div>
                                     <div className="space-y-2 md:col-span-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase">Account Number</label>
-                                        <input type="text" className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white font-mono tracking-wider" />
+                                        <input
+                                            name="accountNumber"
+                                            value={formData.accountNumber}
+                                            onChange={handleInputChange}
+                                            type="text"
+                                            className="w-full px-4 py-3 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white font-mono tracking-wider"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -163,19 +285,15 @@ export default function AddEmployee() {
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Upload Onboarding Documents</h3>
                                 <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                                    Drag and drop files here, or click to browse. Supported format: PDF, JPG, PNG (Max 5MB).
+                                    Files are currently simulated for this MVP. Drag and drop functionality coming soon.
                                 </p>
-                                <button className="px-6 py-2 bg-white dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl text-gray-700 dark:text-white font-medium hover:bg-gray-50 dark:hover:bg-white/20 transition-colors">
-                                    Browse Files
-                                </button>
                             </div>
 
                             <div className="space-y-4">
-                                <p className="text-sm font-bold text-gray-500 uppercase">Required Documents</p>
+                                <p className="text-sm font-bold text-gray-500 uppercase">Required Documents Checklist</p>
                                 {[
                                     { name: 'Aadhaar Card', required: true },
                                     { name: 'PAN Card', required: true },
-                                    { name: 'Previous Employment Letter', required: false },
                                     { name: 'Highest Qualification Degree', required: true }
                                 ].map((doc, i) => (
                                     <div key={i} className="flex items-center justify-between p-4 bg-white dark:bg-brand-800 border border-gray-100 dark:border-white/5 rounded-xl">
@@ -187,10 +305,9 @@ export default function AddEmployee() {
                                                 <p className="font-semibold text-gray-800 dark:text-white">
                                                     {doc.name} {doc.required && <span className="text-red-500">*</span>}
                                                 </p>
-                                                <p className="text-xs text-gray-400">Not uploaded</p>
+                                                <p className="text-xs text-brand-600 font-medium">Ready for capture</p>
                                             </div>
                                         </div>
-                                        <button className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline">Upload</button>
                                     </div>
                                 ))}
                             </div>
@@ -202,15 +319,25 @@ export default function AddEmployee() {
                 <div className="p-8 border-t border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex justify-between items-center">
                     <button
                         onClick={handleBack}
-                        className="px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                        disabled={loading}
+                        className="px-6 py-3 rounded-xl border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-100 dark:hover:bg-white/10 transition-colors disabled:opacity-50"
                     >
                         {currentStep === 1 ? 'Cancel' : 'Back'}
                     </button>
                     <button
                         onClick={handleNext}
-                        className="flex items-center gap-2 px-8 py-3 bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all font-bold"
+                        disabled={loading}
+                        className="flex items-center gap-2 px-8 py-3 bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all font-bold disabled:opacity-50"
                     >
-                        {currentStep === 3 ? 'Complete Onboarding' : 'Next Step'} <ChevronRight size={18} />
+                        {loading ? (
+                            <>
+                                <Loader2 size={18} className="animate-spin" /> Processing...
+                            </>
+                        ) : (
+                            <>
+                                {currentStep === 3 ? 'Complete Onboarding' : 'Next Step'} <ChevronRight size={18} />
+                            </>
+                        )}
                     </button>
                 </div>
             </div>

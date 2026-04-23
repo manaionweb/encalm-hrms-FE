@@ -1,5 +1,6 @@
 import { Search, Bell, Moon, Sun, Menu } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
     onMenuClick: () => void;
@@ -7,6 +8,7 @@ interface HeaderProps {
 
 export default function Header({ onMenuClick }: HeaderProps) {
     const { theme, toggleTheme } = useTheme();
+    const { user } = useAuth();
 
     return (
         <header className="h-16 bg-transparent flex items-center justify-between px-4 md:px-8 py-4 mb-4 md:mb-8">
@@ -18,7 +20,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 >
                     <Menu size={24} />
                 </button>
-                {/* Breadcrumbs or Title could go here */}
             </div>
 
             <div className="flex items-center gap-3 md:gap-4">
@@ -40,17 +41,17 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     )}
                 </button>
 
-                <div className="flex items-center gap-3 pl-2 md:pl-4 border-l border-gray-200 ml-2">
-                    <div className="text-right hidden md:block">
-                        <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Raman Thakur</p>
-                        <p className="text-xs text-gray-500">HR Admin</p>
+                {user && (
+                    <div className="flex items-center gap-3 pl-2 md:pl-4 border-l border-gray-200 ml-2">
+                        <div className="text-right hidden md:block">
+                            <p className="text-sm font-bold text-gray-800 dark:text-gray-100">{user.name}</p>
+                            <p className="text-xs text-gray-500 capitalize">{user.role?.toLowerCase().replace('_', ' ') || 'User'}</p>
+                        </div>
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white shadow-sm bg-brand-500 flex items-center justify-center text-white font-bold text-sm">
+                            {user.name.charAt(0)}
+                        </div>
                     </div>
-                    <img
-                        src="/raman-thakur.jpg"
-                        alt="Profile"
-                        className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white shadow-sm object-cover"
-                    />
-                </div>
+                )}
             </div>
         </header>
     );

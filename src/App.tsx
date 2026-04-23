@@ -6,6 +6,7 @@ import SignIn from './pages/SignIn';
 import Layout from './components/Layout';
 import DashboardHome from './pages/DashboardHome';
 import EmployeeList from './pages/EmployeeList';
+import AddEmployee from './pages/AddEmployee';
 import EmployeeProfile from './pages/EmployeeProfile';
 import Attendance from './pages/Attendance';
 import Leave from './pages/Leave';
@@ -19,14 +20,25 @@ import AccessMasters from './pages/masters/AccessMasters';
 
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-brand-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-500 dark:text-gray-400 font-medium">Loading session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ThemeProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/signin" replace />} />
-          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signin" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <SignIn />} />
 
           {/* Dashboard Route */}
           <Route path="/dashboard" element={
@@ -44,6 +56,16 @@ function AppContent() {
             isAuthenticated ? (
               <Layout>
                 <EmployeeList />
+              </Layout>
+            ) : (
+              <Navigate to="/signin" replace />
+            )
+          } />
+          
+          <Route path="/employee/add" element={
+            isAuthenticated ? (
+              <Layout>
+                <AddEmployee />
               </Layout>
             ) : (
               <Navigate to="/signin" replace />
@@ -82,6 +104,17 @@ function AppContent() {
             isAuthenticated ? (
               <Layout>
                 <Leave />
+              </Layout>
+            ) : (
+              <Navigate to="/signin" replace />
+            )
+          } />
+
+          {/* Profile Route */}
+          <Route path="/profile" element={
+            isAuthenticated ? (
+              <Layout>
+                <EmployeeProfile />
               </Layout>
             ) : (
               <Navigate to="/signin" replace />

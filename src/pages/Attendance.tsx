@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, AlertCircle, CheckCircle, Coffee, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, AlertCircle, CheckCircle, Coffee, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../utils/api';
 
 // Types for Attendance Data
 type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Half Day' | 'Holiday' | 'Weekend';
@@ -10,7 +11,7 @@ interface DailyLog {
     inTime?: string;
     outTime?: string;
     status: AttendanceStatus;
-    hours?: string;
+    hours?: number;
 }
 
 export default function Attendance() {
@@ -18,34 +19,80 @@ export default function Attendance() {
     const [isPunchedIn, setIsPunchedIn] = useState(false);
     const [punchInTime, setPunchInTime] = useState<Date | null>(null);
     const [selectedMonth, setSelectedMonth] = useState(new Date());
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        present: 0,
+        absent: 0,
+        late: 0,
+        holiday: 0
+    });
 
-    // Mock Attendance History for the selected month
-    const [attendanceHistory] = useState<DailyLog[]>([
-        { date: '2025-12-01', status: 'Weekend' },
-        { date: '2025-12-02', inTime: '09:05', outTime: '18:10', status: 'Present', hours: '9h 5m' },
-        { date: '2025-12-03', inTime: '09:00', outTime: '18:00', status: 'Present', hours: '9h 0m' },
-        { date: '2025-12-04', inTime: '09:45', outTime: '18:30', status: 'Late', hours: '8h 45m' },
-        { date: '2025-12-05', inTime: '09:10', outTime: '18:15', status: 'Present', hours: '9h 5m' },
-        // ... more data can be generated
-    ]);
+    const [attendanceHistory, setAttendanceHistory] = useState<DailyLog[]>([]);
 
-    // Update clock every second
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    const handlePunch = () => {
-        if (isPunchedIn) {
-            // Punch Out Logic
-            setIsPunchedIn(false);
-            toast.success(`Punched Out successfully at ${currentTime.toLocaleTimeString()}`);
-            // real app would save to DB here
-        } else {
-            // Punch In Logic
-            setIsPunchedIn(true);
-            setPunchInTime(currentTime);
-            toast.success(`Punched In successfully at ${currentTime.toLocaleTimeString()}`);
+    useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                const res = await api.get('/attendance/status');
+                setIsPunchedIn(res.data.isPunchedIn);
+                if (res.data.punchInTime) setPunchInTime(new Date(res.data.punchInTime));
+            } catch (error) {
+                console.error("Failed to fetch status:", error);
+            }
+        };
+        fetchStatus();
+    }, []);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            setLoading(true);
+            try {
+                const year = selectedMonth.getFullYear();
+                const month = selectedMonth.getMonth() + 1;
+                const [historyRes, statsRes] = await Promise.all([
+                    api.get(`/attendance/history?year=${year}&month=${month}`),
+                    api.get(`/attendance/stats?year=${year}&month=${month}`)
+                ]);
+                setAttendanceHistory(historyRes.data);
+                setStats(statsRes.data);
+            } catch (error) {
+                console.error("Failed to fetch history:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchHistory();
+    }, [selectedMonth]);
+
+    const handlePunch = async () => {
+        try {
+            const res = await api.post('/attendance/punch');
+            toast.success(res.data.message);
+            
+            // Re-fetch status and current day history
+            const statusRes = await api.get('/attendance/status');
+            setIsPunchedIn(statusRes.data.isPunchedIn);
+            if (statusRes.data.punchInTime) {
+                setPunchInTime(new Date(statusRes.data.punchInTime));
+            } else {
+                setPunchInTime(null);
+            }
+            
+            // Refresh history for the current month
+            const year = selectedMonth.getFullYear();
+            const month = selectedMonth.getMonth() + 1;
+            const [historyRes, statsRes] = await Promise.all([
+                api.get(`/attendance/history?year=${year}&month=${month}`),
+                api.get(`/attendance/stats?year=${year}&month=${month}`)
+            ]);
+            setAttendanceHistory(historyRes.data);
+            setStats(statsRes.data);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Error during punch toggle');
         }
     };
 
@@ -99,10 +146,10 @@ export default function Attendance() {
                     {log && displayStatus !== 'Weekend' && log.inTime && (
                         <div className="mt-2 space-y-1">
                             <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                                <Clock size={10} /> {log.inTime}
+                                <Clock size={10} /> {new Date(log.inTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                             </div>
                             <div className="flex items-center gap-1 text-xs text-red-500 dark:text-red-400">
-                                <Clock size={10} /> {log.outTime || '--:--'}
+                                <Clock size={10} /> {log.outTime ? new Date(log.outTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'}
                             </div>
                         </div>
                     )}
@@ -171,28 +218,28 @@ export default function Attendance() {
                         <div className="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center mb-4">
                             <CheckCircle />
                         </div>
-                        <h4 className="text-2xl font-bold text-gray-800 dark:text-white">22</h4>
+                        <h4 className="text-2xl font-bold text-gray-800 dark:text-white">{stats.present}</h4>
                         <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mt-1">Present Days</p>
                     </div>
                     <div className="bg-white dark:bg-brand-900 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                         <div className="w-10 h-10 bg-red-100 text-red-600 rounded-lg flex items-center justify-center mb-4">
                             <AlertCircle />
                         </div>
-                        <h4 className="text-2xl font-bold text-gray-800 dark:text-white">01</h4>
+                        <h4 className="text-2xl font-bold text-gray-800 dark:text-white">{stats.absent}</h4>
                         <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mt-1">Absents</p>
                     </div>
                     <div className="bg-white dark:bg-brand-900 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                         <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center mb-4">
                             <Clock />
                         </div>
-                        <h4 className="text-2xl font-bold text-gray-800 dark:text-white">03</h4>
+                        <h4 className="text-2xl font-bold text-gray-800 dark:text-white">{stats.late}</h4>
                         <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mt-1">Late Marks</p>
                     </div>
                     <div className="bg-white dark:bg-brand-900 p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                         <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-4">
                             <Coffee />
                         </div>
-                        <h4 className="text-2xl font-bold text-gray-800 dark:text-white">04</h4>
+                        <h4 className="text-2xl font-bold text-gray-800 dark:text-white">{stats.holiday}</h4>
                         <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase mt-1">Holidays</p>
                     </div>
 
@@ -244,7 +291,12 @@ export default function Attendance() {
                 </div>
 
                 {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-2 relative min-h-[400px]">
+                    {loading && (
+                        <div className="absolute inset-0 bg-white/50 dark:bg-brand-900/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
+                            <Loader2 className="animate-spin text-brand-500" size={40} />
+                        </div>
+                    )}
                     {generateCalendarDays()}
                 </div>
             </div>

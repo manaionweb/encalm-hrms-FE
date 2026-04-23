@@ -16,7 +16,8 @@ interface User {
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
-    login: (email: string, role: UserRole) => Promise<void>;
+    isLoading: boolean;
+    login: (email: string, password: string) => Promise<void>;
     logout: () => void;
     error: string | null;
 }
@@ -25,7 +26,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [error] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     // Initialize from local storage to persist login across refreshes
     useEffect(() => {
@@ -33,31 +35,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (storedUser) {
             setUser(JSON.parse(storedUser));
         }
+        setIsLoading(false);
     }, []);
 
-    const login = async (email: string, role: UserRole) => {
-        // Mock login
-        const userData: User = {
-            id: 1, // Changed to number to match interface
-            name: 'Demo User',
-            email,
-            role,
-            tenantId: 'tenant-1',
-            accessibleModules: ['DASHBOARD', 'ATTENDANCE', 'EMPLOYEE', 'TEAM', 'LEAVE', 'REPORTS', 'MASTERS', 'TASK']
-        };
-        setUser(userData);
-        localStorage.setItem('encalm_user', JSON.stringify(userData));
+    const login = async (email: string, password: string) => {
+        try {
+            setError(null);
+            setIsLoading(true);
+            const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+            
+            const response = await fetch(`${baseURL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
+
+            const { token, user: userData } = data;
+
+            setUser(userData);
+            localStorage.setItem('encalm_user', JSON.stringify(userData));
+            localStorage.setItem('token', token);
+        } catch (err: any) {
+            setError(err.message || 'Login failed');
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const logout = () => {
         setUser(null);
         localStorage.removeItem('encalm_user');
+        localStorage.removeItem('token');
     };
 
     return (
         <AuthContext.Provider value={{
             user,
             isAuthenticated: !!user,
+            isLoading,
             login,
             logout,
             error

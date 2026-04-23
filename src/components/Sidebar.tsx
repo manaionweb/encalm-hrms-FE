@@ -1,4 +1,4 @@
-import { LayoutDashboard, Clock, Users, UsersRound, CalendarDays, FileText, Settings, ClipboardList, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Clock, Users, UsersRound, CalendarDays, FileText, Settings, ClipboardList, LogOut, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import vedaLogo from '../assets/veda-logo.png';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -20,6 +20,7 @@ const menuItems: MenuItem[] = [
     { icon: FileText, label: 'Reports', path: '/reports', module: 'REPORTS' },
     { icon: Settings, label: 'Masters', path: '/masters', module: 'MASTERS' },
     { icon: ClipboardList, label: 'Task', path: '/task', module: 'TASK' },
+    { icon: User, label: 'My Profile', path: '/profile', module: 'MY_PROFILE' },
 ];
 
 interface SidebarProps {
@@ -45,10 +46,10 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     // Or if simply no modules are returned, we might want to default to standard Employee modules?
     // For safety during migration: if HR_ADMIN and no modules, show all.
     if (userModules.length === 0 && user?.role === 'HR_ADMIN') {
-        userModules = ['DASHBOARD', 'ATTENDANCE', 'EMPLOYEE', 'TEAM', 'LEAVE', 'REPORTS', 'MASTERS', 'TASK'];
+        userModules = ['DASHBOARD', 'ATTENDANCE', 'EMPLOYEE', 'TEAM', 'LEAVE', 'REPORTS', 'MASTERS', 'TASK', 'MY_PROFILE'];
     } else if (userModules.length === 0) {
-        // Default for others if nothing set
-        userModules = ['DASHBOARD'];
+        // Default for others: personal access
+        userModules = ['DASHBOARD', 'ATTENDANCE', 'LEAVE', 'MY_PROFILE'];
     }
 
     const handleLogout = () => {
@@ -90,9 +91,6 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                     >
                         {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                     </button>
-                    {!isCollapsed && (
-                        <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded uppercase opacity-50 ml-auto md:ml-auto">{user?.role}</span>
-                    )}
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto overflow-x-hidden">
