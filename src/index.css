@@ -67,3 +67,31 @@
     }
   }
 }
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #7c3aed, #a855f7);
+  border-radius: 10px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a855f7;
+}
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}

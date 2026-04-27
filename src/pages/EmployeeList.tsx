@@ -3,11 +3,25 @@ import { Search, Filter, Plus, MoreVertical, FileText, User, MapPin, Mail, Phone
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import { createPortal } from 'react-dom';
 
 export default function EmployeeList() {
     const navigate = useNavigate();
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterStatus, setFilterStatus] = useState('All');
+    const [showFilterDrawer, setShowFilterDrawer] = useState(false);
+    const [filters, setFilters] = useState({
+        name: '',
+        email: '',
+        role: '',
+        location: '',
+        status: 'All'
+    });
+    const [appliedFilters, setAppliedFilters] = useState({
+        name: '',
+        email: '',
+        role: '',
+        location: '',
+        status: 'All'
+    });
     const [loading, setLoading] = useState(true);
 
     // Employee State
@@ -43,13 +57,14 @@ export default function EmployeeList() {
     // Filter Logic
     const filteredEmployees = employees.filter(emp => {
         const profile = emp.employeeProfile || {};
-        const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (profile.title?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-        
-        const status = profile.status || 'Active';
-        const matchesStatus = filterStatus === 'All' || status === filterStatus;
-        return matchesSearch && matchesStatus;
+
+        return (
+            (!appliedFilters.name || emp.name.toLowerCase().includes(appliedFilters.name.toLowerCase())) &&
+            (!appliedFilters.email || emp.email.toLowerCase().includes(appliedFilters.email.toLowerCase())) &&
+            (!appliedFilters.role || (profile.title || '').toLowerCase().includes(appliedFilters.role.toLowerCase())) &&
+            (!appliedFilters.location || (profile.location || '').toLowerCase().includes(appliedFilters.location.toLowerCase())) &&
+            (appliedFilters.status === 'All' || (profile.status || 'Active') === appliedFilters.status)
+        );
     });
 
     const handleViewProfile = (id: number) => {
@@ -108,22 +123,27 @@ export default function EmployeeList() {
                     <input
                         type="text"
                         placeholder="Search by name, email, or ID..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        value={filters.name}
+                        onChange={(e) => setFilters({ ...filters, name: e.target.value })}
                         className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition-all text-gray-800 dark:text-white"
                     />
                 </div>
                 <div className="flex gap-3 w-full md:w-auto">
                     <select
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value)}
+                        value={filters.status}
+                        onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                         className="px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/50 cursor-pointer"
                     >
                         <option value="All">All Status</option>
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                     </select>
-                    <button className="p-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100">
+                    <button
+                        onClick={() => setShowFilterDrawer(true)}
+                        className="p-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-600 dark:text-gray-300 
+                        hover:bg-brand-500 hover:text-white hover:scale-105 
+                        transition-all duration-200"
+                    >
                         <Filter size={20} />
                     </button>
                 </div>
@@ -155,7 +175,7 @@ export default function EmployeeList() {
                                 {/* Status Stripe */}
                                 <div className={`absolute top-0 left-0 w-1 h-full ${status === 'Active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
 
-                                <div className="p-6">
+                                <div className="flex flex-col justify-between h-full p-6">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex gap-4">
                                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg ${avatarColor}`}>
@@ -316,6 +336,111 @@ export default function EmployeeList() {
                     </div>
                 </div>
             )}
+            {showFilterDrawer &&
+    createPortal(
+        <div className="fixed inset-0 z-[999999]">
+
+            {/* Overlay */}
+            <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-md"
+                onClick={() => setShowFilterDrawer(false)}
+            />
+
+            {/* Drawer */}
+            <div className="absolute right-0 top-0 w-full max-w-md h-full bg-white dark:bg-brand-900 shadow-2xl animate-slide-in-right">
+
+                <div className="flex flex-col justify-between h-full p-6">
+
+                    {/* TOP */}
+                    <div>
+                        <h2 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">
+                            Advanced Filters
+                        </h2>
+
+                        <div className="space-y-4">
+
+                            <input
+                                type="text"
+                                placeholder="Search name..."
+                                value={filters.name}
+                                onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
+                            />
+
+                            <input
+                                type="text"
+                                placeholder="Search email..."
+                                value={filters.email}
+                                onChange={(e) => setFilters({ ...filters, email: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
+                            />
+
+                            <input
+                                type="text"
+                                placeholder="Filter by role..."
+                                value={filters.role}
+                                onChange={(e) => setFilters({ ...filters, role: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
+                            />
+
+                            <input
+                                type="text"
+                                placeholder="Filter by location..."
+                                value={filters.location}
+                                onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
+                            />
+
+                            <select
+                                value={filters.status}
+                                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                                className="w-full px-4 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10"
+                            >
+                                <option value="All">All Status</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+
+                        </div>
+                    </div>
+
+                    {/* BUTTONS */}
+                    <div className="flex gap-3 pt-6">
+
+                        <button
+                            onClick={() => {
+                                const reset = {
+                                    name: '',
+                                    email: '',
+                                    role: '',
+                                    location: '',
+                                    status: 'All'
+                                };
+                                setFilters(reset);
+                                setAppliedFilters(reset);
+                            }}
+                            className="flex-1 py-2 rounded-xl bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-white/20 cursor-pointer"
+                        >
+                            Clear
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                setAppliedFilters(filters);
+                                setShowFilterDrawer(false);
+                            }}
+                            className="flex-1 py-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-700 text-white cursor-pointer hover:from-brand-600 hover:to-brand-800 transition-all duration-200"
+                        >
+                            Apply Filters
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+        </div>,
+        document.body
+    )
+}
         </div>
     );
 }
