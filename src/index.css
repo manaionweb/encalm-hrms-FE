@@ -67,20 +67,20 @@
     }
   }
 }
-.custom-scroll::-webkit-scrollbar {
+::-webkit-scrollbar {
   width: 6px;
 }
 
-.custom-scroll::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.custom-scroll::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: linear-gradient(to bottom, #7c3aed, #a855f7);
   border-radius: 10px;
 }
 
-.custom-scroll::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background: #a855f7;
 }
 @keyframes slide-in-right {

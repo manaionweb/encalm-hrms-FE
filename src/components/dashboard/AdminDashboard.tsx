@@ -1,5 +1,4 @@
 import { AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import HeadcountStats from './HeadcountStats';
 import LiveAttendance from './LiveAttendance';
 
@@ -42,7 +41,7 @@ export default function AdminDashboard({ navigate, stats, attendanceData, pendin
             </div>
 
             {/* Key Metrics Widgets */}
-            <HeadcountStats {...stats} />
+            <HeadcountStats {...stats} navigate={navigate} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Live Attendance Chart */}
@@ -69,7 +68,7 @@ export default function AdminDashboard({ navigate, stats, attendanceData, pendin
                                         <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">{approval.userName}</h4>
                                         <p className="text-xs font-medium text-gray-500 mt-0.5">{approval.type} • <span className="text-brand-600 dark:text-brand-400 font-semibold">{approval.duration} days</span></p>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={() => navigate('/leave')}
                                         className="text-xs font-bold text-brand-600 dark:text-brand-400 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 dark:bg-brand-500/10 dark:hover:bg-brand-500/20 px-3.5 py-2 rounded-xl transition-colors"
                                     >
@@ -115,9 +114,9 @@ export default function AdminDashboard({ navigate, stats, attendanceData, pendin
                                         </td>
                                         <td className="py-4 px-8 text-gray-500 dark:text-gray-400 font-medium">{emp.role}</td>
                                         <td className="py-4 px-8">
-                                            <span className={`px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm ${emp.status === 'Inactive'
-                                                ? 'bg-red-50 text-red-700 border border-red-100 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20'
-                                                : 'bg-green-50 text-green-700 border border-green-100 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20'
+                                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm ${emp.status === 'Inactive'
+                                                ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20 dark:text-rose-400'
+                                                : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 dark:text-emerald-400'
                                                 }`}>
                                                 {emp.status}
                                             </span>

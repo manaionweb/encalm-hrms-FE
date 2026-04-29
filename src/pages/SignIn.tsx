@@ -77,7 +77,7 @@ export default function SignIn() {
                 <div className="md:w-1/2 bg-white flex flex-col justify-center items-center p-8 md:p-14 relative z-10">
 
                     {/* Decorative Floating Circles for Right Panel */}
-                    <div className="absolute top-12 right-12 w-4 h-4 border-2 border-brand-200 rounded-full"></div>
+                    {/* <div className="absolute top-12 right-12 w-4 h-4 border-2 border-brand-200 rounded-full"></div> */}
                     <div className="absolute top-24 right-8 w-8 h-8 bg-brand-100/50 rounded-full blur-sm"></div>
 
                     <div className="w-full max-w-xs md:max-w-sm space-y-6">

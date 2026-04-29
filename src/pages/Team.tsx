@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { Users, Plus, MoreVertical, Briefcase, UserPlus, X } from 'lucide-react';
+import { Users, Plus, MoreVertical, Briefcase, UserPlus, X, Trash2 } from 'lucide-react';
 import { useRBAC } from '../hooks/useRBAC';
-import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+// import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 import {
     getTeams,
     createTeam as createTeamApi,
     addMembers,
     removeMember,
-    deleteTeam
+    deleteTeam,
+    updateTeam
 } from '../utils/teamApi';
 
 
@@ -32,10 +33,13 @@ export default function Team() {
     const [newTeamDesc, setNewTeamDesc] = useState('');
     const fetchEmployees = async () => {
         try {
-            const res = await axios.get('http://localhost:3001/api/employee');
-            setEmployees(res.data);
+            const res = await api.get('/employee');
+            if (res.data) {
+                setEmployees(res.data);
+            }
         } catch (err) {
-            console.log(err);
+            console.error("Failed to fetch employees", err);
+            setEmployees([]);
         }
     };
     const fetchTeams = async () => {
@@ -52,16 +56,8 @@ export default function Team() {
     }, []);
     const handleCreateTeam = async (e: React.FormEvent) => {
         e.preventDefault();
-        await createTeamApi({
-            name: newTeamName,
-            description: newTeamDesc
-        });
-
-        fetchTeams();
         setShowCreateModal(false);
-        setNewTeamName('');
-        setNewTeamDesc('');
-
+        setShowAddMemberModal(true);
     };
     useEffect(() => {
         const closeMenu = () => setMenuOpen(null);
@@ -142,12 +138,14 @@ export default function Team() {
                             <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 line-clamp-2 min-h-[40px]">{team.description}</p>
 
                             <div className="flex items-center gap-3 mb-6 p-3 bg-gray-50 dark:bg-white/5 rounded-xl">
-                                <div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white font-bold text-xs">
-                                    {team.manager ? team.manager[0] : '?'}
+                                <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-white/5 flex items-center justify-center font-bold text-brand-600 dark:text-brand-400">
+                                    {team.manager ? (typeof team.manager === 'object' ? team.manager.name?.[0] : team.manager[0]) : '?'}
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-400 uppercase font-bold">Manager</p>
-                                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{team.manager}</p>
+                                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                        {team.manager ? (typeof team.manager === 'object' ? team.manager.name : team.manager) : 'Unassigned'}
+                                    </p>
                                 </div>
                             </div>
 
@@ -196,7 +194,7 @@ export default function Team() {
                                     >
                                         <div>
                                             <p className="font-semibold text-gray-800 dark:text-white text-sm">{emp.name}</p>
-                                            <p className="text-xs text-gray-500">{emp.role}</p>
+                                            <p className="text-xs text-gray-500">{typeof emp.role === 'object' ? emp.role?.name || 'Employee' : emp.role || 'Employee'}</p>
                                         </div>
 
                                         <div className="flex items-center gap-3">
@@ -234,7 +232,13 @@ export default function Team() {
                         </div>
                         <div className="p-4 flex gap-3">
                             <button
-                                onClick={() => setShowAddMemberModal(false)}
+                                onClick={() => {
+                                    setShowAddMemberModal(false);
+                                    if (!selectedTeam) {
+                                        setNewTeamName('');
+                                        setNewTeamDesc('');
+                                    }
+                                }}
                                 className="flex-1 py-2 rounded-xl bg-gray-400 text-white hover:bg-gray-500 transition-all active:scale-95"
                             >
                                 Cancel
@@ -242,11 +246,25 @@ export default function Team() {
 
                             <button
                                 onClick={async () => {
-                                    if (!selectedTeam) return;
-                                    await addMembers(selectedTeam, {
-                                        members: selectedEmployees,
-                                        managerId: selectedManager
-                                    });
+                                    if (selectedTeam) {
+                                        await addMembers(selectedTeam, {
+                                            members: selectedEmployees,
+                                            managerId: selectedManager
+                                        });
+                                    } else {
+                                        const res = await createTeamApi({
+                                            name: newTeamName,
+                                            description: newTeamDesc
+                                        });
+                                        if (res.data && res.data.id) {
+                                            await addMembers(res.data.id, {
+                                                members: selectedEmployees,
+                                                managerId: selectedManager
+                                            });
+                                        }
+                                        setNewTeamName('');
+                                        setNewTeamDesc('');
+                                    }
 
                                     fetchTeams();
                                     setShowAddMemberModal(false);
@@ -256,7 +274,7 @@ export default function Team() {
                                 }}
                                 className="flex-1 py-2 rounded-xl bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-500/30 transition-all active:scale-95"
                             >
-                                Add
+                                {selectedTeam ? 'Add' : 'Create Team'}
                             </button>
                         </div>
 
@@ -307,42 +325,46 @@ export default function Team() {
 
             {editTeam && (
                 <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-20">
-                    <div className="bg-white dark:bg-brand-900 rounded-2xl shadow-2xl w-full max-w-md">
-
-                        <div className="p-6 flex justify-between">
-                            <h3 className="text-white font-bold">Edit Team</h3>
-                            <button onClick={() => setEditTeam(null)}><X /></button>
+                    <div className="bg-white dark:bg-brand-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 dark:border-white/10 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-gray-800 dark:text-white">Edit Team</h3>
+                            <button onClick={() => setEditTeam(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                                <X size={20} />
+                            </button>
                         </div>
-
                         <div className="p-6 space-y-4">
-                            <input
-                                value={editTeam.name}
-                                onChange={(e) => setEditTeam({ ...editTeam, name: e.target.value })}
-                                className="w-full p-2 rounded bg-white/10"
-                            />
-
-                            <textarea
-                                value={editTeam.description}
-                                onChange={(e) => setEditTeam({ ...editTeam, description: e.target.value })}
-                                className="w-full p-2 rounded bg-white/10"
-                            />
-
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Team Name</label>
+                                <input
+                                    type="text"
+                                    value={editTeam.name}
+                                    onChange={(e) => setEditTeam({ ...editTeam, name: e.target.value })}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Description</label>
+                                <textarea
+                                    rows={3}
+                                    value={editTeam.description}
+                                    onChange={(e) => setEditTeam({ ...editTeam, description: e.target.value })}
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-brand-500/50 outline-none text-gray-800 dark:text-white"
+                                />
+                            </div>
                             <button
                                 onClick={async () => {
-                                    await axios.patch(`http://localhost:5000/api/teams/${editTeam.id}`, {
+                                    await updateTeam(editTeam.id, {
                                         name: editTeam.name,
                                         description: editTeam.description
                                     });
-
                                     fetchTeams();
                                     setEditTeam(null);
                                 }}
-                                className="w-full py-2 bg-brand-600 rounded-xl text-white"
+                                className="w-full py-3 bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-500/30 hover:bg-brand-700 transition-all mt-2"
                             >
-                                Apply Changes
+                                Save Changes
                             </button>
                         </div>
-
                     </div>
                 </div>
             )}
@@ -430,34 +452,34 @@ export default function Team() {
                 </div>
             )}
             {confirmDelete && (
-                <div className="fixed inset-0 z-[999] bg-black/50 flex items-center justify-center">
-                    <div className="bg-brand-900 p-6 rounded-xl w-[300px] text-center">
-
-                        <p className="text-white mb-4">Delete this team?</p>
-
-                        <div className="flex gap-2">
+                <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-start justify-center pt-32">
+                    <div className="bg-white dark:bg-brand-900 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center border border-gray-100 dark:border-white/10">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                            <Trash2 size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Delete Team?</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                            Are you sure you want to delete this team? This action cannot be undone.
+                        </p>
+                        <div className="flex gap-3">
                             <button
                                 onClick={() => setConfirmDelete(null)}
-                                className="flex-1 bg-gray-500 py-2 rounded"
+                                className="flex-1 py-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 font-semibold hover:bg-gray-200 dark:hover:bg-white/10 transition-all"
                             >
                                 Cancel
                             </button>
-
                             <button
                                 onClick={async () => {
                                     if (!confirmDelete) return;
-
                                     await deleteTeam(confirmDelete);
                                     fetchTeams();
-
                                     setConfirmDelete(null);
                                 }}
-                                className="flex-1 bg-red-500 py-2 rounded"
+                                className="flex-1 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold shadow-lg shadow-red-500/30 transition-all"
                             >
-                                Delete
+                                Yes, Delete
                             </button>
                         </div>
-
                     </div>
                 </div>
             )

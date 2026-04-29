@@ -12,6 +12,7 @@ import Attendance from './pages/Attendance';
 import Leave from './pages/Leave';
 import Team from './pages/Team';
 import Reports from './pages/Reports';
+import LeaveToday from './pages/LeaveToday';
 import MastersLayout from './pages/masters/MastersLayout';
 import OrgMasters from './pages/masters/OrgMasters';
 import StatutoryMasters from './pages/masters/StatutoryMasters';
@@ -61,7 +62,7 @@ function AppContent() {
               <Navigate to="/signin" replace />
             )
           } />
-          
+
           <Route path="/employee/add" element={
             isAuthenticated ? (
               <Layout>
@@ -139,6 +140,17 @@ function AppContent() {
             isAuthenticated ? (
               <Layout>
                 <Reports />
+              </Layout>
+            ) : (
+              <Navigate to="/signin" replace />
+            )
+          } />
+
+          {/* Leave Today Route */}
+          <Route path="/leave-today" element={
+            isAuthenticated ? (
+              <Layout>
+                <LeaveToday />
               </Layout>
             ) : (
               <Navigate to="/signin" replace />

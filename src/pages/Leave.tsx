@@ -365,20 +365,24 @@ export default function Leave() {
                                                 "{l.reason}"
                                             </td>
                                             <td className="py-5 px-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${l.status === 'APPROVED' ? 'bg-green-100 text-green-700' : l.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm ${l.status === 'APPROVED' 
+                                                    ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' 
+                                                    : l.status === 'REJECTED' 
+                                                    ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' 
+                                                    : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'}`}>
                                                     {l.status}
                                                 </span>
                                             </td>
                                             <td className="py-5 px-4 text-right">
                                                 {l.status === 'PENDING' && (
                                                     <div className="flex items-center justify-end gap-2">
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleUpdateStatus(l.id, 'APPROVED')}
                                                             className="p-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-colors" title="Approve"
                                                         >
                                                             <CheckCircle size={18} />
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleUpdateStatus(l.id, 'REJECTED')}
                                                             className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors" title="Reject"
                                                         >
