@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useRBAC } from '../hooks/useRBAC';
 import { ArrowLeft, User, FileText, CreditCard, Download, Upload, Briefcase, Save, X, Edit, Printer, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 
@@ -86,6 +86,7 @@ export default function EmployeeProfile() {
                 location: employee.employeeProfile?.location,
                 department: employee.employeeProfile?.department,
                 title: employee.employeeProfile?.title,
+                status: employee.employeeProfile?.status || 'Active',
                 // Statutory
                 uan: employee.employeeProfile?.statutory?.uan,
                 pfNumber: employee.employeeProfile?.statutory?.pfNumber,
@@ -95,7 +96,10 @@ export default function EmployeeProfile() {
                 // Bank
                 bankName: employee.employeeProfile?.bank?.bankName,
                 accountNumber: employee.employeeProfile?.bank?.accountNumber,
-                ifsc: employee.employeeProfile?.bank?.ifsc
+                ifsc: employee.employeeProfile?.bank?.ifsc,
+                // User
+                name: employee.name,
+                email: employee.email
             };
 
             await api.put(`/employee/${id}`, profileData);
@@ -109,6 +113,13 @@ export default function EmployeeProfile() {
 
     const handleInputChange = (field: string, value: string) => {
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
+        if (field === 'name' || field === 'email') {
+            setEmployee((prev: any) => ({
+                ...prev,
+                [field]: value
+            }));
+            return;
+        }
         setEmployee((prev: any) => ({
             ...prev,
             employeeProfile: {
@@ -217,7 +228,19 @@ export default function EmployeeProfile() {
                         {employee.name.split(' ').map((n: any) => n[0]).join('')}
                     </div>
                     <div className="text-center md:text-left flex-1">
-                        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">{employee.name}</h1>
+                        {isEditing ? (
+                            <div className="space-y-2 mb-4">
+                                <label className="text-[10px] font-black text-brand-600 uppercase tracking-widest">Full Name</label>
+                                <input
+                                    type="text"
+                                    value={employee.name}
+                                    onChange={(e) => handleInputChange('name', e.target.value)}
+                                    className="w-full text-2xl font-bold bg-brand-50 dark:bg-white/5 border border-brand-200 dark:border-white/10 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-brand-500/50"
+                                />
+                            </div>
+                        ) : (
+                            <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">{employee.name}</h1>
+                        )}
                         <p className="text-lg text-brand-600 dark:text-brand-400 font-medium mb-4">{profile.title || 'Employee'} • {profile.department || 'N/A'}</p>
                         <div className="flex flex-wrap justify-center md:justify-start gap-4">
                             <span className="px-3 py-1 bg-gray-100 dark:bg-white/10 rounded-lg text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
@@ -417,7 +440,22 @@ export default function EmployeeProfile() {
 
                     {activeTab === 'personal' && (
                         <div className="bg-white dark:bg-brand-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5 animate-fade-in-up">
-                            <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">Personal Information</h3>
+                            <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex justify-between items-center">
+                                Personal Information
+                                {isEditing && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-gray-400 uppercase">Employment Status:</span>
+                                        <select 
+                                            value={profile.status || 'Active'}
+                                            onChange={(e) => handleInputChange('status', e.target.value)}
+                                            className="bg-brand-50 dark:bg-white/5 border border-brand-200 dark:border-white/10 rounded-lg px-3 py-1 text-xs font-bold text-brand-600 outline-none"
+                                        >
+                                            <option value="Active">Active</option>
+                                            <option value="Inactive">Inactive</option>
+                                        </select>
+                                    </div>
+                                )}
+                            </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-gray-400 uppercase">Phone</label>
@@ -430,8 +468,16 @@ export default function EmployeeProfile() {
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-gray-400 uppercase">Email</label>
-                                    {/* Email logic is handled by User model, not Editable profile here easily for now */}
-                                    <p className="font-semibold text-gray-500">{employee.email}</p>
+                                    {isEditing ? (
+                                        <input 
+                                            type="email" 
+                                            value={employee.email} 
+                                            onChange={(e) => handleInputChange('email', e.target.value)} 
+                                            className="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg outline-none" 
+                                        />
+                                    ) : (
+                                        <p className="font-semibold text-gray-800 dark:text-gray-200">{employee.email}</p>
+                                    )}
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-gray-400 uppercase">Date of Birth</label>
@@ -614,17 +660,44 @@ export default function EmployeeProfile() {
                                 Back
                             </button>
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     const input = document.getElementById('payslip-content');
-                                    if (input) {
-                                        html2canvas(input, { scale: 2 }).then((canvas) => {
-                                            const imgData = canvas.toDataURL('image/png');
-                                            const pdf = new jsPDF('p', 'mm', 'a4');
-                                            const pdfWidth = pdf.internal.pageSize.getWidth();
-                                            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                                            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                                            pdf.save(`Payslip_${employee.name}.pdf`);
+                                    if (!input) {
+                                        toast.error("Could not find payslip content");
+                                        return;
+                                    }
+                                    
+                                    try {
+                                        const toastId = toast.loading("Generating PDF...");
+                                        const canvas = await html2canvas(input, { 
+                                            scale: 2,
+                                            useCORS: true,
+                                            allowTaint: true,
+                                            backgroundColor: '#ffffff',
+                                            onclone: (clonedDoc) => {
+                                                const elements = clonedDoc.querySelectorAll('*');
+                                                elements.forEach((el) => {
+                                                    const HTMLElement = el as HTMLElement;
+                                                    const style = window.getComputedStyle(HTMLElement);
+                                                    if (style.color.includes('oklch')) HTMLElement.style.color = '#000000';
+                                                    if (style.backgroundColor.includes('oklch')) HTMLElement.style.backgroundColor = '#ffffff';
+                                                    if (style.borderColor.includes('oklch')) HTMLElement.style.borderColor = '#e5e7eb';
+                                                });
+                                            }
                                         });
+                                        
+                                        const imgData = canvas.toDataURL('image/png');
+                                        const pdf = new jsPDF('p', 'mm', 'a4');
+                                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                                        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                                        
+                                        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                                        pdf.save(`Payslip_${employee.name}_${new Date().toLocaleDateString()}.pdf`);
+                                        
+                                        toast.success("PDF Downloaded", { id: toastId });
+                                    } catch (err) {
+                                        console.error("PDF Export Error:", err);
+                                        toast.error("Failed to generate PDF");
                                     }
                                 }}
                                 className="flex items-center gap-2 px-6 py-2.5 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/20"
@@ -644,7 +717,7 @@ export default function EmployeeProfile() {
                             <X size={24} />
                         </button>
 
-                        <div className="w-[320px] h-[500px] bg-white rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden relative flex flex-col">
+                        <div id="id-card-container" className="w-[320px] h-[500px] bg-white rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden relative flex flex-col">
                             <div className="absolute top-0 inset-x-0 h-48 bg-gradient-to-br from-brand-800 to-brand-600 rounded-b-[50px] z-0"></div>
                             <div className="mx-auto w-16 h-3 bg-white/20 rounded-full mt-4 relative z-10 backdrop-blur-sm"></div>
                             <div className="flex justify-between items-start mb-6 px-6 pt-4 relative z-10">
@@ -681,7 +754,26 @@ export default function EmployeeProfile() {
                             </div>
                         </div>
                         <div className="flex justify-center mt-6">
-                            <button className="flex items-center gap-2 px-6 py-2 bg-white text-gray-800 font-bold rounded-full shadow-lg hover:bg-gray-100 transition-colors">
+                            <button 
+                                onClick={() => {
+                                    const printContent = document.getElementById('id-card-container');
+                                    const WindowPrt = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
+                                    if (WindowPrt && printContent) {
+                                        WindowPrt.document.write('<html><head><title>Print ID Card</title>');
+                                        WindowPrt.document.write('<script src="https://cdn.tailwindcss.com"></script>');
+                                        WindowPrt.document.write('</head><body>');
+                                        WindowPrt.document.write(printContent.innerHTML);
+                                        WindowPrt.document.write('</body></html>');
+                                        WindowPrt.document.close();
+                                        WindowPrt.focus();
+                                        setTimeout(() => {
+                                            WindowPrt.print();
+                                            WindowPrt.close();
+                                        }, 500);
+                                    }
+                                }}
+                                className="flex items-center gap-2 px-6 py-2 bg-white text-gray-800 font-bold rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+                            >
                                 <Printer size={18} /> Print
                             </button>
                         </div>

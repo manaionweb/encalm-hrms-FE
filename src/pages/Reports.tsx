@@ -1,7 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { FileText, TrendingUp, Users, DollarSign, Calendar } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const COLORS = ['#8b5cf6', '#3b82f6', '#ec4899', '#f97316'];
 
@@ -12,9 +12,9 @@ export default function Reports() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res1 = await axios.get('http://localhost:3001/api/reports/dashboard');
-                const res2 = await axios.get('http://localhost:3001/api/reports/attendance');
-                const res3 = await axios.get('http://localhost:3001/api/reports/payroll');
+                const res1 = await api.get('/reports/dashboard');
+                const res2 = await api.get('/reports/attendance');
+                const res3 = await api.get('/reports/payroll');
 
                 setStats(res1.data || {});
                 setAttendanceData(res2.data?.data || res2.data || []);
@@ -144,7 +144,7 @@ export default function Reports() {
                     <h3 className="text-xl font-bold mb-4">Generate Reports</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div
-                            onClick={() => window.open('http://localhost:3001/api/reports/monthly-attendance')}
+                            onClick={() => window.open(`${api.defaults.baseURL}/reports/monthly-attendance`)}
                             className="bg-white/10 hover:bg-white/20 transition-colors p-4 rounded-xl cursor-pointer backdrop-blur-sm border border-white/10"
                         >
                             <FileText size={24} className="mb-3 opacity-80" />
@@ -152,7 +152,7 @@ export default function Reports() {
                             <p className="text-xs opacity-70 mt-1">Download CSV</p>
                         </div>
                         <div
-                            onClick={() => window.open('http://localhost:3001/api/reports/salary-register')}
+                            onClick={() => window.open(`${api.defaults.baseURL}/reports/salary-register`)}
                             className="bg-white/10 hover:bg-white/20 transition-colors p-4 rounded-xl cursor-pointer backdrop-blur-sm border border-white/10"
                         >
                             <DollarSign size={24} className="mb-3 opacity-80" />
@@ -160,7 +160,7 @@ export default function Reports() {
                             <p className="text-xs opacity-70 mt-1">Download PDF</p>
                         </div>
                         <div
-                            onClick={() => window.open('http://localhost:3001/api/reports/leave-balance')}
+                            onClick={() => window.open(`${api.defaults.baseURL}/reports/leave-balance`)}
                             className="bg-white/10 hover:bg-white/20 transition-colors p-4 rounded-xl cursor-pointer backdrop-blur-sm border border-white/10"
                         >
                             <Calendar size={24} className="mb-3 opacity-80" />

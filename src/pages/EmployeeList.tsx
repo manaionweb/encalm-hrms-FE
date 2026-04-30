@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Plus, MoreVertical, FileText, User, MapPin, Mail, Phone, Loader2, Edit, Trash2 } from 'lucide-react';
+import { Search, Filter, Plus, MoreVertical, FileText, User, MapPin, Mail, Phone, Loader2, Edit, Trash2, LayoutGrid, List } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -23,6 +23,7 @@ export default function EmployeeList() {
         status: 'All'
     });
     const [loading, setLoading] = useState(true);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     // Employee State
     const [employees, setEmployees] = useState<any[]>([]);
@@ -169,6 +170,26 @@ export default function EmployeeList() {
                     />
                 </div>
                 <div className="flex gap-3 w-full md:w-auto">
+                    {/* View Toggle */}
+                    <div className="flex bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-1">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-2 rounded-xl transition-all ${viewMode === 'grid' 
+                                ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20' 
+                                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
+                        >
+                            <LayoutGrid size={20} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-2 rounded-xl transition-all ${viewMode === 'list' 
+                                ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20' 
+                                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
+                        >
+                            <List size={20} />
+                        </button>
+                    </div>
+
                     {/* Custom Styled Dropdown - Separately implemented here */}
                     <div className="relative group/dropdown">
                         <select
@@ -212,98 +233,188 @@ export default function EmployeeList() {
                     <p className="text-gray-500 dark:text-gray-400 mt-2">Try adjusting your filters or search term.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {filteredEmployees.map((emp, index) => {
-                        const profile = emp.employeeProfile || {};
-                        const status = profile.status || 'Active';
-                        // Generate color based on index or name hash
-                        const colors = ['bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500'];
-                        const avatarColor = colors[index % colors.length];
+                viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {filteredEmployees.map((emp, index) => {
+                            const profile = emp.employeeProfile || {};
+                            const status = profile.status || 'Active';
+                            // Generate color based on index or name hash
+                            const colors = ['bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500'];
+                            const avatarColor = colors[index % colors.length];
 
-                        return (
-                            <div key={emp.id} className="bg-white dark:bg-brand-900 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-                                {/* Status Stripe */}
-                                <div className={`absolute top-0 left-0 w-1 h-full ${status === 'Active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                            return (
+                                <div key={emp.id} className="bg-white dark:bg-brand-900 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                                    {/* Status Stripe */}
+                                    <div className={`absolute top-0 left-0 w-1 h-full ${status === 'Active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
 
-                                <div className="flex flex-col justify-between h-full p-6">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="flex gap-4">
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg ${avatarColor}`}>
-                                                {emp.name.split(' ').map((n: string) => n[0]).join('')}
+                                    <div className="flex flex-col justify-between h-full p-6">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex gap-4">
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg ${avatarColor}`}>
+                                                    {emp.name.split(' ').map((n: string) => n[0]).join('')}
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-gray-800 dark:text-white text-lg">{emp.name}</h3>
+                                                    <p className="text-gray-500 dark:text-gray-400 text-sm">{profile.title || 'Employee'}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="font-bold text-gray-800 dark:text-white text-lg">{emp.name}</h3>
-                                                <p className="text-gray-500 dark:text-gray-400 text-sm">{profile.title || 'Employee'}</p>
+                                            <div className="relative">
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === emp.id ? null : emp.id); }}
+                                                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                                                >
+                                                    <MoreVertical size={20} />
+                                                </button>
+                                                
+                                                {activeDropdown === emp.id && (
+                                                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-brand-900 rounded-xl shadow-xl border border-gray-100 dark:border-white/10 overflow-hidden z-20 animate-fade-in-up">
+                                                        <button 
+                                                            onClick={() => { setActiveDropdown(null); navigate(`/employee/${emp.id}?edit=true`); }}
+                                                            className="w-full text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
+                                                        >
+                                                            <Edit size={16} /> Edit Profile
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => { setActiveDropdown(null); setEmployeeToDelete(emp); }}
+                                                            className="w-full text-left px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors flex items-center gap-2 border-t border-gray-100 dark:border-white/5"
+                                                        >
+                                                            <Trash2 size={16} /> Delete Employee
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                        <div className="relative">
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === emp.id ? null : emp.id); }}
-                                                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
-                                            >
-                                                <MoreVertical size={20} />
-                                            </button>
-                                            
-                                            {activeDropdown === emp.id && (
-                                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-brand-900 rounded-xl shadow-xl border border-gray-100 dark:border-white/10 overflow-hidden z-20 animate-fade-in-up">
-                                                    <button 
-                                                        onClick={() => { setActiveDropdown(null); navigate(`/employee/${emp.id}?edit=true`); }}
-                                                        className="w-full text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
-                                                    >
-                                                        <Edit size={16} /> Edit Profile
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => { setActiveDropdown(null); setEmployeeToDelete(emp); }}
-                                                        className="w-full text-left px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors flex items-center gap-2 border-t border-gray-100 dark:border-white/5"
-                                                    >
-                                                        <Trash2 size={16} /> Delete Employee
-                                                    </button>
-                                                </div>
+
+                                        <div className="space-y-3 mb-6">
+                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                                                <MapPin size={16} className="text-gray-400" />
+                                                {profile.location || 'N/A'}
+                                            </div>
+                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                                                <Mail size={16} className="text-gray-400" />
+                                                {emp.email}
+                                            </div>
+                                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                                                <Phone size={16} className="text-gray-400" />
+                                                {profile.phone || 'N/A'}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/5">
+                                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-sm transition-all hover:scale-105 ${status.toLowerCase() === 'active'
+                                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                                }`}>
+                                                {status}
+                                            </span>
+
+                                            {status === 'Inactive' ? (
+                                                <button className="text-sm font-medium text-red-500 hover:text-red-600 hover:underline">
+                                                    Process F&F
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleViewProfile(emp.id)}
+                                                    className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 hover:underline flex items-center gap-1"
+                                                >
+                                                    View Profile
+                                                </button>
                                             )}
                                         </div>
                                     </div>
-
-                                    <div className="space-y-3 mb-6">
-                                        <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                                            <MapPin size={16} className="text-gray-400" />
-                                            {profile.location || 'N/A'}
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                                            <Mail size={16} className="text-gray-400" />
-                                            {emp.email}
-                                        </div>
-                                        <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                                            <Phone size={16} className="text-gray-400" />
-                                            {profile.phone || 'N/A'}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/5">
-                                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-sm transition-all hover:scale-105 ${status === 'Active'
-                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                            : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                                            }`}>
-                                            {status}
-                                        </span>
-
-                                        {status === 'Inactive' ? (
-                                            <button className="text-sm font-medium text-red-500 hover:text-red-600 hover:underline">
-                                                Process F&F
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={() => handleViewProfile(emp.id)}
-                                                className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 hover:underline flex items-center gap-1"
-                                            >
-                                                View Profile
-                                            </button>
-                                        )}
-                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="bg-white dark:bg-brand-900 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-gray-50 dark:bg-white/5">
+                                    <tr>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Employee</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Email Address</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Role / Designation</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Status</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                                    {filteredEmployees.map((emp, index) => {
+                                        const profile = emp.employeeProfile || {};
+                                        const status = profile.status || 'Active';
+                                        const colors = ['bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500'];
+                                        const avatarColor = colors[index % colors.length];
+
+                                        return (
+                                            <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md ${avatarColor}`}>
+                                                            {emp.name.split(' ').map((n: string) => n[0]).join('')}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-gray-800 dark:text-white">{emp.name}</div>
+                                                            <div className="text-xs text-gray-500 dark:text-gray-400">ID: #{emp.id}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 font-medium">
+                                                    {emp.email}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm text-gray-800 dark:text-white font-bold">{profile.title || 'Employee'}</div>
+                                                    <div className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{profile.department || 'General'}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${status.toLowerCase() === 'active'
+                                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                                        : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                                        }`}>
+                                                        {status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="relative inline-block">
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === emp.id ? null : emp.id); }}
+                                                            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+                                                        >
+                                                            <MoreVertical size={18} />
+                                                        </button>
+                                                        
+                                                        {activeDropdown === emp.id && (
+                                                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-brand-900 rounded-xl shadow-xl border border-gray-100 dark:border-white/10 overflow-hidden z-20 animate-fade-in-up">
+                                                                <button 
+                                                                    onClick={() => { setActiveDropdown(null); navigate(`/employee/${emp.id}?edit=true`); }}
+                                                                    className="w-full text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
+                                                                >
+                                                                    <Edit size={14} /> Edit Profile
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => { setActiveDropdown(null); handleViewProfile(emp.id); }}
+                                                                    className="w-full text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors flex items-center gap-2 border-t border-gray-100 dark:border-white/5"
+                                                                >
+                                                                    <User size={14} /> View Profile
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => { setActiveDropdown(null); setEmployeeToDelete(emp); }}
+                                                                    className="w-full text-left px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors flex items-center gap-2 border-t border-gray-100 dark:border-white/5"
+                                                                >
+                                                                    <Trash2 size={14} /> Delete Employee
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )
             )}
 
             {activeDropdown && (
@@ -311,8 +422,8 @@ export default function EmployeeList() {
             )}
 
             {/* Delete Confirmation Modal */}
-            {employeeToDelete && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
+            {employeeToDelete && createPortal(
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
                     <div className="bg-white dark:bg-brand-950 rounded-3xl shadow-2xl w-full max-w-md p-8 border border-gray-100 dark:border-white/10 text-center relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-2 bg-red-500"></div>
                         <div className="w-20 h-20 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -351,12 +462,13 @@ export default function EmployeeList() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Add Employee Modal */}
-            {showAddModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
+            {showAddModal && createPortal(
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
                     <div className="bg-white dark:bg-brand-950 rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-gray-100 dark:border-brand-500/20 max-h-[90vh] flex flex-col">
                         <div className="p-8 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gradient-to-r from-transparent to-brand-500/5">
                             <div>
@@ -527,7 +639,8 @@ export default function EmployeeList() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
             {showFilterDrawer &&
                 createPortal(

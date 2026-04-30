@@ -78,10 +78,16 @@ export default function Attendance() {
                     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
                     if (log) {
-                        if (log.status === 'Present') newStats.present++;
-                        else if (log.status === 'Absent') newStats.absent++;
-                        else if (log.status === 'Late') newStats.late++;
-                        else if (log.status === 'Holiday') newStats.holiday++;
+                        if (log.status === 'Present') {
+                            newStats.present++;
+                        } else if (log.status === 'Late') {
+                            newStats.present++;
+                            newStats.late++;
+                        } else if (log.status === 'Absent') {
+                            newStats.absent++;
+                        } else if (log.status === 'Holiday') {
+                            newStats.holiday++;
+                        }
                     } else if (!isWeekend && !(isCurrentMonth && d === today.getDate())) {
                         // Days with no log are counted as absent (excluding weekends and today)
                         newStats.absent++;

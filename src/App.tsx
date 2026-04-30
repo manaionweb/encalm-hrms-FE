@@ -18,6 +18,8 @@ import OrgMasters from './pages/masters/OrgMasters';
 import StatutoryMasters from './pages/masters/StatutoryMasters';
 import AttendanceMasters from './pages/masters/AttendanceMasters';
 import AccessMasters from './pages/masters/AccessMasters';
+import EmployeeAttendanceList from './pages/EmployeeAttendanceList';
+import EmployeeAttendanceView from './pages/EmployeeAttendanceView';
 
 
 function AppContent() {
@@ -92,6 +94,28 @@ function AppContent() {
             isAuthenticated ? (
               <Layout>
                 <Attendance />
+              </Layout>
+            ) : (
+              <Navigate to="/signin" replace />
+            )
+          } />
+
+          {/* Employee Attendance List (Admin Only) */}
+          <Route path="/employee-attendance" element={
+            isAuthenticated ? (
+              <Layout>
+                <EmployeeAttendanceList />
+              </Layout>
+            ) : (
+              <Navigate to="/signin" replace />
+            )
+          } />
+
+          {/* Employee Attendance View */}
+          <Route path="/employee-attendance/:id" element={
+            isAuthenticated ? (
+              <Layout>
+                <EmployeeAttendanceView />
               </Layout>
             ) : (
               <Navigate to="/signin" replace />

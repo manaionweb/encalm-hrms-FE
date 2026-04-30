@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, XCircle, Loader2, CheckCircle, XIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
@@ -11,7 +12,14 @@ const HOLIDAYS = [
 
 export default function Leave() {
     const { user } = useAuth();
+    const location = useLocation();
     const [activeTab, setActiveTab] = useState<'MY_LEAVE' | 'APPROVALS'>('MY_LEAVE');
+
+    useEffect(() => {
+        if (location.state?.activeTab) {
+            setActiveTab(location.state.activeTab);
+        }
+    }, [location.state]);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [showApplyModal, setShowApplyModal] = useState(false);
