@@ -47,6 +47,16 @@
   .dark body {
     @apply bg-brand-950 text-white;
   }
+
+  button, 
+  [role="button"],
+  select,
+  input[type="submit"],
+  input[type="reset"],
+  input[type="button"],
+  a {
+    @apply cursor-pointer;
+  }
 }
 
 /* Custom utilities if needed */
@@ -67,6 +77,7 @@
     }
   }
 }
+
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -83,10 +94,12 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #a855f7;
 }
+
 @keyframes slide-in-right {
   from {
     transform: translateX(100%);
   }
+
   to {
     transform: translateX(0);
   }
@@ -97,10 +110,32 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.5);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.8);
 }
