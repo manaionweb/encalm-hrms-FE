@@ -33,3 +33,14 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// get tenantId to work with reports
+api.interceptors.request.use((config) => {
+  const tenantId = localStorage.getItem("tenantId");
+
+  if (tenantId) {
+    config.headers["x-tenant-id"] = tenantId;
+  }
+
+  return config;
+});

@@ -40,24 +40,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const login = async (email: string, password: string) => {
-        try {
-            setError(null);
-            setIsLoading(true);
-            const res = await api.post('/auth/login', { email, password });
-            const data = res.data;
+    try {
+        setError(null);
+        setIsLoading(true);
 
-            const { token, user: userData } = data;
+        const res = await api.post('/auth/login', { email, password });
+        const data = res.data;
 
-            setUser(userData);
-            localStorage.setItem('encalm_user', JSON.stringify(userData));
-            localStorage.setItem('token', token);
-        } catch (err: any) {
-            setError(err.message || 'Login failed');
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        const { token, user: userData } = data;
+
+        setUser(userData);
+
+        localStorage.setItem('encalm_user', JSON.stringify(userData));
+        localStorage.setItem('token', token);
+
+        // ✅ 🔥 THIS IS THE MISSING LINE
+        localStorage.setItem('tenantId', userData.tenantId);
+
+    } catch (err: any) {
+        setError(err.message || 'Login failed');
+        throw err;
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     const logout = () => {
         setUser(null);
