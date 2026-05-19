@@ -10,6 +10,7 @@ export default function EmployeeDashboard({ user }: { user: any }) {
     const [punchStatus, setPunchStatus] = useState<any>(null);
     const [leaveBalances, setLeaveBalances] = useState<any[]>([]);
     const [recentAttendance, setRecentAttendance] = useState<any[]>([]);
+    const [holidays, setHolidays] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchEmployeeData = async () => {
@@ -19,15 +20,17 @@ export default function EmployeeDashboard({ user }: { user: any }) {
 
             try {
                 // Fetch each resource individually to handle partial failures
-                const [statusRes, leaveRes, historyRes] = await Promise.allSettled([
+                const [statusRes, leaveRes, historyRes, holidayRes] = await Promise.allSettled([
                     api.get('/attendance/status'),
                     api.get('/leave/balances'),
-                    api.get(`/attendance/history?year=${year}&month=${month}`)
+                    api.get(`/attendance/history?year=${year}&month=${month}`),
+                    api.get('/masters/holidays')
                 ]);
 
                 if (statusRes.status === 'fulfilled') setPunchStatus(statusRes.value.data);
                 if (leaveRes.status === 'fulfilled') setLeaveBalances(leaveRes.value.data);
                 if (historyRes.status === 'fulfilled') setRecentAttendance(historyRes.value.data.slice(0, 5));
+                if (holidayRes.status === 'fulfilled') setHolidays(holidayRes.value.data);
 
             } catch (error) {
                 console.error("Failed to fetch employee dashboard data:", error);
@@ -78,6 +81,17 @@ export default function EmployeeDashboard({ user }: { user: any }) {
     const hasPunchedOut = !!punchStatus?.punchOutTime;
     const isShiftCompleted = !isPunchedIn && hasPunchedOut;
 
+    // Holiday Check
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayHoliday = holidays.find(h => {
+        const hDate = new Date(h.date);
+        hDate.setHours(0, 0, 0, 0);
+        return hDate.getTime() === today.getTime();
+    });
+
+    const isHolidayToday = !!todayHoliday;
+
     return (
         <div className="space-y-8 animate-fade-in-up">
             {/* GREETING SECTION */}
@@ -92,16 +106,18 @@ export default function EmployeeDashboard({ user }: { user: any }) {
                     <div className="mt-8 flex flex-wrap gap-4">
                         <button
                             onClick={handlePunch}
-                            disabled={isShiftCompleted}
-                            className={`flex items-center gap-3 px-8 py-3 rounded-2xl font-bold transition-all shadow-lg active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${isPunchedIn
+                            disabled={isShiftCompleted || isHolidayToday}
+                            className={`flex items-center gap-3 px-8 py-3 rounded-2xl font-bold transition-all shadow-lg active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${isHolidayToday
+                                ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30'
+                                : isPunchedIn
                                     ? 'bg-white text-brand-600 hover:bg-gray-100 shadow-white/10'
                                     : isShiftCompleted
                                         ? 'bg-gray-500 text-white shadow-none'
                                         : 'bg-green-500 text-white hover:bg-green-600 shadow-green-500/20'
                                 }`}
                         >
-                            {isPunchedIn ? <LogOut size={22} /> : <LogIn size={22} />}
-                            {isPunchedIn ? 'Punch Out Now' : isShiftCompleted ? 'Shift Completed' : 'Punch In Now'}
+                            {isHolidayToday ? <Calendar size={22} /> : isPunchedIn ? <LogOut size={22} /> : <LogIn size={22} />}
+                            {isHolidayToday ? 'Holiday Today' : isPunchedIn ? 'Punch Out Now' : isShiftCompleted ? 'Shift Completed' : 'Punch In Now'}
                         </button>
 
                         <button
@@ -145,11 +161,45 @@ export default function EmployeeDashboard({ user }: { user: any }) {
                         <div className="p-3 bg-purple-100 dark:bg-purple-500/20 rounded-2xl text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
                             <History size={24} />
                         </div>
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Upcoming</span>
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                            {isHolidayToday ? 'Today' : 'Upcoming'}
+                        </span>
                     </div>
-                    <h4 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Next Holiday</h4>
-                    <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white">Christmas Day</p>
-                    <p className="text-xs text-purple-500 font-bold mt-1">25 Dec 2025</p>
+                    {(() => {
+                        const nextHoliday = [...holidays]
+                            .filter(h => {
+                                const hDate = new Date(h.date);
+                                hDate.setHours(0, 0, 0, 0);
+                                return hDate >= today;
+                            })
+                            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
+                        if (!nextHoliday) {
+                            return (
+                                <>
+                                    <h4 className="text-gray-500 dark:text-gray-400 text-sm font-medium">Holiday</h4>
+                                    <p className="text-xl font-bold mt-1 text-gray-400">No holidays scheduled</p>
+                                </>
+                            );
+                        }
+
+                        const hDate = new Date(nextHoliday.date);
+                        const isThisHolidayToday = hDate.setHours(0, 0, 0, 0) === today.getTime();
+
+                        return (
+                            <>
+                                <h4 className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+                                    {isThisHolidayToday ? 'Public Holiday' : 'Next Holiday'}
+                                </h4>
+                                <p className="text-2xl font-bold mt-1 text-gray-800 dark:text-white truncate" title={nextHoliday.name}>
+                                    {nextHoliday.name}
+                                </p>
+                                <p className="text-xs text-purple-500 font-black mt-1 uppercase tracking-wider">
+                                    {hDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </p>
+                            </>
+                        );
+                    })()}
                 </div>
             </div>
 

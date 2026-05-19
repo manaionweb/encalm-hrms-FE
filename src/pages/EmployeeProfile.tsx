@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useRBAC } from '../hooks/useRBAC';
 import { ArrowLeft, User, FileText, CreditCard, Download, Upload, Briefcase, Save, X, Edit, Printer, Loader2 } from 'lucide-react';
@@ -12,18 +13,20 @@ export default function EmployeeProfile() {
     const navigate = useNavigate();
     const location = useLocation();
     const { hasPermission } = useRBAC();
-    
+
     const queryParams = new URLSearchParams(location.search);
     const initialEditMode = queryParams.get('edit') === 'true';
 
-    const [activeTab, setActiveTab] = useState<'personal' | 'statutory' | 'documents'>('statutory');
+const [activeTab, setActiveTab] = useState<'personal' | 'statutory' | 'documents' | 'shiftRoster'>('statutory');
     const [isEditing, setIsEditing] = useState(initialEditMode);
-    const [showPayslip, setShowPayslip] = useState(false);
+const [showPayslip, setShowPayslip] = useState(false);
     const [showIDCard, setShowIDCard] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [docToDelete, setDocToDelete] = useState<number | null>(null);
 
     // Employee State
     const [employee, setEmployee] = useState<any>(null);
+    const [shifts, setShifts] = useState<any[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     const fetchEmployee = async () => {
@@ -39,9 +42,19 @@ export default function EmployeeProfile() {
             setLoading(false);
         }
     };
+    const fetchShifts = async () => {
+    try {
+        const res = await api.get('/masters/shifts');
+        setShifts(res.data);
+    } catch (error) {
+        console.error('Error fetching shifts:', error);
+        toast.error('Failed to load shifts');
+    }
+};
 
     useEffect(() => {
         fetchEmployee();
+        fetchShifts();
     }, [id]);
 
     const handleCancel = () => {
@@ -92,6 +105,7 @@ export default function EmployeeProfile() {
                 department: employee.employeeProfile?.department,
                 title: employee.employeeProfile?.title,
                 status: employee.employeeProfile?.status || 'Active',
+                shiftId: employee.employeeProfile?.shiftId,
                 // Statutory
                 uan: employee.employeeProfile?.statutory?.uan,
                 pfNumber: employee.employeeProfile?.statutory?.pfNumber,
@@ -104,10 +118,12 @@ export default function EmployeeProfile() {
                 ifsc: employee.employeeProfile?.bank?.ifsc,
                 // User
                 name: employee.name,
-                email: employee.email
+                email: employee.email,
+                role: employee.role?.name || employee.role?.title || employee.role
             };
 
-            await api.put(`/employee/${id}`, profileData);
+            const endpoint = id ? `/employee/${id}` : '/employee/me';
+            await api.put(endpoint, profileData);
             setIsEditing(false);
             toast.success('Profile Updated Successfully!');
         } catch (error) {
@@ -118,8 +134,7 @@ export default function EmployeeProfile() {
 
     const handleInputChange = (field: string, value: string) => {
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
-        if (field === 'name' || field === 'email') {
-            setEmployee((prev: any) => ({
+    if (field === 'name' || field === 'email' || field === 'role') {            setEmployee((prev: any) => ({
                 ...prev,
                 [field]: value
             }));
@@ -162,7 +177,7 @@ export default function EmployeeProfile() {
         }));
     };
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
              if (file.type !== "application/pdf") {
@@ -189,11 +204,12 @@ export default function EmployeeProfile() {
 
     const handleDownload = (doc: any) => {
         if (doc.url) {
-            // If backend provides a real URL, open it to trigger download
-            window.open(doc.url, '_blank');
+            // Build the full URL (backend is on port 3001)
+            const baseUrl = 'http://localhost:3001';
+            const fullUrl = doc.url.startsWith('http') ? doc.url : `${baseUrl}${doc.url}`;
+            window.open(fullUrl, '_blank');
         } else {
-            // Fallback for documents that don't have a URL yet
-            toast(`Download link for ${doc.name} will be provided by backend`);
+            toast.error('Download link not available');
         }
     };
 
@@ -251,9 +267,12 @@ export default function EmployeeProfile() {
                         ) : (
                             <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">{employee.name}</h1>
                         )}
-                        <p className="text-lg text-brand-600 dark:text-brand-400 font-medium mb-4">{profile.title || 'Employee'} • {profile.department || 'N/A'}</p>
-                        <div className="flex flex-wrap justify-center md:justify-start gap-4">
-
+<p className="text-lg text-brand-600 dark:text-brand-400 font-medium mb-4">
+    {employee.role?.name || employee.role?.title || employee.role || 'Employee'} • {profile.title || 'No Designation'}
+</p>                        <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                            <span className="px-3 py-1 bg-gray-100 dark:bg-white/10 rounded-lg text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                                <Briefcase size={16} /> ID: {employee.id}
+                            </span>
                             <span className="px-3 py-1 bg-gray-100 dark:bg-white/10 rounded-lg text-sm text-gray-600 dark:text-gray-300">
                                 {profile.location || 'N/A'}
                             </span>
@@ -280,14 +299,13 @@ export default function EmployeeProfile() {
 
             {/* Tabs */}
             <div className="flex gap-4 mb-6 border-b border-gray-200 dark:border-white/10 overflow-x-auto pb-1">
-                {['statutory', 'documents', 'personal'].map((tab) => (
-                    <button
+             {['statutory', 'documents', 'personal', 'shiftRoster'].map((tab) => (     <button
                         key={tab}
                         onClick={() => setActiveTab(tab as any)}
                         className={`pb-3 px-2 font-medium transition-all whitespace-nowrap capitalize ${activeTab === tab ? 'text-brand-600 border-b-2 border-brand-600' : 'text-gray-500 hover:text-gray-700'}`}
                     >
-                        {tab === 'statutory' ? 'Statutory & Bank Info' : tab === 'personal' ? 'Personal Details' : 'Document Vault'}
-                    </button>
+{tab === 'statutory' ? 'Statutory & Bank Info' : tab === 'personal' ? 'Personal Details' :tab === 'shiftRoster'
+    ? 'Shift & Roster' : 'Document Vault'}                    </button>
                 ))}
             </div>
 
@@ -418,15 +436,7 @@ export default function EmployeeProfile() {
                                             </div>
                                             <div className="flex gap-2">
                                                 {isEditing && (
-                                                    <button onClick={() => {
-                                                        setEmployee((prev: any) => ({
-                                                            ...prev,
-                                                            employeeProfile: {
-                                                                ...(prev.employeeProfile || {}),
-                                                                documents: prev.employeeProfile.documents.filter((_: any, idx: number) => idx !== i)
-                                                            }
-                                                        }));
-                                                    }} className="p-2 text-gray-400 hover:text-red-600 transition-colors">
+                                                    <button onClick={() => setDocToDelete(i)} className="p-2 text-gray-400 hover:text-red-600 transition-colors">
                                                         <X size={20} />
                                                     </button>
                                                 )}
@@ -453,7 +463,7 @@ export default function EmployeeProfile() {
                                 {isEditing && (
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-bold text-gray-400 uppercase">Employment Status:</span>
-                                        <select 
+                                        <select
                                             value={profile.status || 'Active'}
                                             onChange={(e) => handleInputChange('status', e.target.value)}
                                             className="bg-brand-50 dark:bg-white/5 border border-brand-200 dark:border-white/10 rounded-lg px-3 py-1 text-xs font-bold text-brand-600 outline-none"
@@ -504,6 +514,35 @@ export default function EmployeeProfile() {
                                         </>
                                     ) : <p className="font-semibold">{profile.dob ? new Date(profile.dob).toLocaleDateString() : 'N/A'}</p>}
                                 </div>
+                           <div className="space-y-1">
+    <label className="text-xs font-bold text-gray-400 uppercase">ROLE</label>
+    {isEditing && hasPermission(['HR_ADMIN']) ? (
+        <input
+            type="text"
+            value={employee.role?.name || employee.role?.title || employee.role || ''}
+            onChange={(e) => handleInputChange('role', e.target.value)}
+            className="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg outline-none"
+        />
+    ) : (
+        <p className="font-semibold">
+            {employee.role?.name || employee.role?.title || employee.role || 'N/A'}
+        </p>
+    )}
+</div>
+
+<div className="space-y-1">
+    <label className="text-xs font-bold text-gray-400 uppercase">DESIGNATION</label>
+    {isEditing && hasPermission(['HR_ADMIN']) ? (
+        <input
+            type="text"
+            value={profile.title || ''}
+            onChange={(e) => handleInputChange('title', e.target.value)}
+            className="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg outline-none"
+        />
+    ) : (
+        <p className="font-semibold">{profile.title || 'N/A'}</p>
+    )}
+</div>
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-gray-400 uppercase">Blood Group</label>
                                     {isEditing ? (
@@ -551,7 +590,125 @@ export default function EmployeeProfile() {
                                 </div>
                             </div>
                         </div>
+                                    )}
+
+                    {activeTab === 'shiftRoster' && (
+                        <div className="bg-white dark:bg-brand-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5 animate-fade-in-up">
+                            <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">
+                                Shift & Roster
+                            </h3>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-400 uppercase">
+                                    Assigned Shift
+                                </label>
+
+                                {isEditing && hasPermission(['HR_ADMIN']) ? (
+                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {shifts.map((shift: any) => (
+        <div
+            key={shift.id}
+            onClick={() => {
+                if (isEditing && hasPermission(['HR_ADMIN'])) {
+                    handleInputChange('shiftId', String(shift.id));
+                }
+            }}
+            className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                String(profile.shiftId) === String(shift.id)
+                    ? 'border-brand-400 ring-2 ring-brand-500/50 bg-brand-500/10'
+                    : 'border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5'
+            }`}
+        >
+            
+
+            <div className="space-y-1 text-xs text-gray-500 dark:text-gray-300">
+        <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
+
+    <h4 className="font-bold text-lg text-gray-800 dark:text-white">
+        {shift.name}
+    </h4>
+    <p className="flex justify-between">
+    <span className="font-semibold">Timing:</span>
+    <span>
+        {shift.startTime} - {shift.endTime}
+    </span>
+</p>
+   <p className="flex justify-between">
+    <span className="font-semibold">Break:</span>
+    <span>{shift.breakDuration} mins</span>
+</p>
+
+<p className="flex justify-between">
+    <span className="font-semibold">Grace Time:</span>
+    <span>{shift.graceTime} mins</span>
+</p>
+
+<p className="flex justify-between">
+    <span className="font-semibold">Night Shift:</span>
+    <span>{shift.isNightShift ? "Yes" : "No"}</span>
+</p>
+
+</div>
+
+               </div>
+            </div>
+        
+    ))}
+</div>
+                                ) : (
+                                   <div>
+    {(() => {
+        const assignedShift = shifts.find(
+            (s: any) => String(s.id) === String(profile.shiftId)
+        );
+
+        return assignedShift ? (
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 max-w-md">
+                
+                <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-3">
+                    {assignedShift.name}
+                </h4>
+
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                    
+                    
+
+                    <div className="flex justify-between">
+                        <span>Timing:</span>
+                        <span>
+                            {assignedShift.startTime} - {assignedShift.endTime}
+                        </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                        <span>Break:</span>
+                        <span>{assignedShift.breakDuration} mins</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                        <span>Grace Time:</span>
+                        <span>{assignedShift.graceTime} mins</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                        <span>Night Shift:</span>
+                        <span>
+                            {assignedShift.isNightShift ? 'Yes' : 'No'}
+                        </span>
+                    </div>
+
+                </div>
+            </div>
+        ) : (
+            <p>No Shift Assigned</p>
+        );
+    })()}
+</div>
+                                )}
+                            </div>
+                        </div>
                     )}
+
                 </div>
 
                 {/* Sidebar / Quick Actions */}
@@ -581,7 +738,7 @@ export default function EmployeeProfile() {
             {showPayslip && (
                 <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
                     <div className="bg-white dark:bg-brand-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden">
-                        
+
                         {/* Header */}
                         <div className="p-4 md:p-6 border-b border-gray-100 dark:border-white/10 flex justify-between items-center bg-gray-50 dark:bg-white/5 shrink-0">
                             <h3 className="text-xl font-bold font-mono text-gray-800 dark:text-white">Payslip Preview</h3>
@@ -613,8 +770,9 @@ export default function EmployeeProfile() {
                                         <div className="grid grid-cols-3 gap-1 text-xs">
                                             <span className="text-gray-500 font-medium">Name:</span>
                                             <span className="col-span-2 font-bold">{employee.name}</span>
-
-                                            <span className="text-gray-500 font-medium">Designation:</span>
+                                            <span className="text-gray-500 font-medium">Employee ID:</span>
+                                            <span className="col-span-2 font-bold">{employee.id}</span>
+                                            <span className="text-gray-500 font-medium">Role:</span>  //change to role
                                             <span className="col-span-2 font-bold truncate">{profile.title || 'N/A'}</span>
                                             <span className="text-gray-500 font-medium">Department:</span>
                                             <span className="col-span-2 font-bold truncate">{profile.department || 'N/A'}</span>
@@ -681,10 +839,10 @@ export default function EmployeeProfile() {
                                         toast.error("Could not find payslip content");
                                         return;
                                     }
-                                    
+
                                     try {
                                         const toastId = toast.loading("Generating PDF...");
-                                        const canvas = await html2canvas(input, { 
+                                        const canvas = await html2canvas(input, {
                                             scale: 2,
                                             useCORS: true,
                                             allowTaint: true,
@@ -700,15 +858,15 @@ export default function EmployeeProfile() {
                                                 });
                                             }
                                         });
-                                        
+
                                         const imgData = canvas.toDataURL('image/png');
                                         const pdf = new jsPDF('p', 'mm', 'a4');
                                         const pdfWidth = pdf.internal.pageSize.getWidth();
                                         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                                        
+
                                         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
                                         pdf.save(`Payslip_${employee.name}_${new Date().toLocaleDateString()}.pdf`);
-                                        
+
                                         toast.success("PDF Downloaded", { id: toastId });
                                     } catch (err) {
                                         console.error("PDF Export Error:", err);
@@ -769,7 +927,7 @@ export default function EmployeeProfile() {
                             </div>
                         </div>
                         <div className="flex justify-center mt-6">
-                            <button 
+                            <button
                                 onClick={() => {
                                     const printContent = document.getElementById('id-card-container');
                                     const WindowPrt = window.open('', '', 'left=0,top=0,width=800,height=900,toolbar=0,scrollbars=0,status=0');
@@ -794,6 +952,60 @@ export default function EmployeeProfile() {
                         </div>
                     </div>
                 </div>
+            )}
+            {/* Document Deletion Confirmation */}
+            {docToDelete !== null && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setDocToDelete(null)} />
+                    <div className="relative bg-white dark:bg-brand-950 w-full max-w-sm rounded-[2rem] shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden animate-scale-in">
+                        <div className="p-8 text-center">
+                            <div className="w-16 h-16 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <X size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Delete Document?</h3>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm mb-8 leading-relaxed">
+                                Are you sure you want to delete <strong>{profile?.documents?.[docToDelete]?.name || 'this document'}</strong>? This action cannot be undone.
+                            </p>
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const docId = profile.documents[docToDelete]?.id;
+                                            const empId = id || employee.id;
+
+                                            if (docId) {
+                                                await api.delete(`/employee/${empId}/documents/${docId}`);
+                                            }
+
+                                            setEmployee((prev: any) => ({
+                                                ...prev,
+                                                employeeProfile: {
+                                                    ...(prev.employeeProfile || {}),
+                                                    documents: prev.employeeProfile.documents.filter((_: any, idx: number) => idx !== docToDelete)
+                                                }
+                                            }));
+                                            setDocToDelete(null);
+                                            toast.success('Document deleted from server');
+                                        } catch (error) {
+                                            console.error('Delete error:', error);
+                                            toast.error('Failed to delete document from server');
+                                        }
+                                    }}
+                                    className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-red-600/20"
+                                >
+                                    Yes, Delete
+                                </button>
+                                <button
+                                    onClick={() => setDocToDelete(null)}
+                                    className="w-full py-3.5 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-white/10 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
         </div>
     );
