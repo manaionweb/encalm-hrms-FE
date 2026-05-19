@@ -49,6 +49,32 @@ export default function EmployeeList() {
         fetchEmployees();
     }, []);
 
+    const [masters, setMasters] = useState({
+        departments: [] as any[],
+        roles: [] as any[],
+        designations: [] as any[]
+    });
+
+    useEffect(() => {
+        const fetchMasters = async () => {
+            try {
+                const [deptRes, roleRes, desigRes] = await Promise.all([
+                    api.get('/masters/departments'),
+                    api.get('/masters/roles'),
+                    api.get('/masters/designations')
+                ]);
+                setMasters({
+                    departments: deptRes.data,
+                    roles: roleRes.data,
+                    designations: desigRes.data
+                });
+            } catch (error) {
+                console.error('Error fetching masters:', error);
+            }
+        };
+        fetchMasters();
+    }, []);
+
     // Modal State
     const [showAddModal, setShowAddModal] = useState(false);
     const [newEmployee, setNewEmployee] = useState({
@@ -56,7 +82,11 @@ export default function EmployeeList() {
         email: '',
         phone: '',
         role: '',
+        roleId: '',
         department: '',
+        departmentId: '',
+        title: '',
+        designationId: '',
         location: '',
         status: 'Active',
         panNumber: '',
@@ -95,7 +125,7 @@ export default function EmployeeList() {
         e.preventDefault();
 
         // Basic Validation
-        if (!newEmployee.name || !newEmployee.email || !newEmployee.role) {
+        if (!newEmployee.name || !newEmployee.email || !newEmployee.roleId || !newEmployee.designationId || !newEmployee.departmentId) {
             toast.error('Please fill in all required fields');
             return;
         }
@@ -123,7 +153,11 @@ export default function EmployeeList() {
             email: '',
             phone: '',
             role: '',
+            roleId: '',
             department: '',
+            departmentId: '',
+            title: '',
+            designationId: '',
             location: '',
             status: 'Active',
             panNumber: '',
@@ -136,7 +170,38 @@ export default function EmployeeList() {
         });
         toast.success('Employee Added Successfully!');
     };
+           const handleExportCSV = () => {
+    const csvRows = [
+        ["ID", "Name", "Email", "Phone", "Role", "Department", "Location", "Status"],
+    ];
 
+    filteredEmployees.forEach((emp) => {
+        const profile = emp.employeeProfile || {};
+
+        csvRows.push([
+            emp.id,
+            emp.name,
+            emp.email,
+            profile.phone || "",
+            profile.title || "",
+            profile.department || "",
+            profile.location || "",
+            profile.status || "Active",
+        ]);
+    });
+
+    const csvContent = csvRows.map((row) => row.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "employees.csv";
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+};
     return (
         <div className="animate-fade-in-up">
             {/* Header Actions */}
@@ -146,7 +211,10 @@ export default function EmployeeList() {
                     <p className="text-gray-500 dark:text-gray-400">Manage your organization's workforce</p>
                 </div>
                 <div className="flex gap-3 w-full md:w-auto">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors">
+                      <button
+    onClick={handleExportCSV}
+    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors"
+>
                         <FileText size={18} />
                         <span className="hidden md:inline">Export</span>
                     </button>
@@ -398,10 +466,12 @@ export default function EmployeeList() {
             )}
 
             {/* Delete Confirmation Modal */}
-            {employeeToDelete && createPortal(
-                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
+            {employeeToDelete && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
                     <div className="bg-white dark:bg-brand-950 rounded-3xl shadow-2xl w-full max-w-md p-8 border border-gray-100 dark:border-white/10 text-center relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-2 bg-red-500"></div>
+
+
                         <div className="w-20 h-20 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Trash2 size={40} className="text-red-500" />
                         </div>
@@ -438,8 +508,8 @@ export default function EmployeeList() {
                             </button>
                         </div>
                     </div>
-                </div>,
-                document.body
+                </div>
+            
             )}
 
             {/* Add Employee Modal */}
@@ -472,15 +542,50 @@ export default function EmployeeList() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Role / Designation *</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={newEmployee.role}
-                                            onChange={(e) => setNewEmployee({ ...newEmployee, role: e.target.value })}
-                                            placeholder="e.g. Senior Developer"
-                                            className="w-full px-5 py-3.5 bg-gray-50 dark:bg-brand-900/50 border border-gray-200 dark:border-brand-500/20 rounded-2xl focus:ring-4 focus:ring-brand-500/20 outline-none text-gray-800 dark:text-white font-bold transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
-                                        />
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">System Role *</label>
+                                        <div className="relative group/select">
+                                            <select
+                                                required
+                                                value={newEmployee.roleId}
+                                                onChange={(e) => {
+                                                    const id = e.target.value;
+                                                    const name = masters.roles.find(r => r.id === id)?.name || '';
+                                                    setNewEmployee({ ...newEmployee, roleId: id, role: name });
+                                                }}
+                                                className="appearance-none w-full px-5 py-3.5 bg-gray-50 dark:bg-brand-900/50 border border-gray-200 dark:border-brand-500/20 rounded-2xl focus:ring-4 focus:ring-brand-500/20 outline-none text-gray-800 dark:text-white font-bold transition-all cursor-pointer"
+                                            >
+                                                <option value="" className="dark:bg-brand-950">Select Role</option>
+                                                {masters.roles.map(role => (
+                                                    <option key={role.id} value={role.id} className="dark:bg-brand-950">{role.name}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover/select:text-brand-500 transition-colors">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Designation / Title *</label>
+                                        <div className="relative group/select">
+                                            <select
+                                                required
+                                                value={newEmployee.designationId}
+                                                onChange={(e) => {
+                                                    const id = e.target.value;
+                                                    const name = masters.designations.find(d => d.id === id)?.name || '';
+                                                    setNewEmployee({ ...newEmployee, designationId: id, title: name });
+                                                }}
+                                                className="appearance-none w-full px-5 py-3.5 bg-gray-50 dark:bg-brand-900/50 border border-gray-200 dark:border-brand-500/20 rounded-2xl focus:ring-4 focus:ring-brand-500/20 outline-none text-gray-800 dark:text-white font-bold transition-all cursor-pointer"
+                                            >
+                                                <option value="" className="dark:bg-brand-950">Select Designation</option>
+                                                {masters.designations.map(desig => (
+                                                    <option key={desig.id} value={desig.id} className="dark:bg-brand-950">{desig.name}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover/select:text-brand-500 transition-colors">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email Address *</label>
@@ -507,15 +612,18 @@ export default function EmployeeList() {
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Department</label>
                                         <div className="relative group/select">
                                             <select
-                                                value={newEmployee.department}
-                                                onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
+                                                value={newEmployee.departmentId}
+                                                onChange={(e) => {
+                                                    const id = e.target.value;
+                                                    const name = masters.departments.find(d => d.id === id)?.name || '';
+                                                    setNewEmployee({ ...newEmployee, departmentId: id, department: name });
+                                                }}
                                                 className="appearance-none w-full px-5 py-3.5 bg-gray-50 dark:bg-brand-900/50 border border-gray-200 dark:border-brand-500/20 rounded-2xl focus:ring-4 focus:ring-brand-500/20 outline-none text-gray-800 dark:text-white font-bold transition-all cursor-pointer"
                                             >
                                                 <option value="" className="dark:bg-brand-950">Select Department</option>
-                                                <option value="HR" className="dark:bg-brand-950">HR</option>
-                                                <option value="Engineering" className="dark:bg-brand-950">Engineering</option>
-                                                <option value="Design" className="dark:bg-brand-950">Design</option>
-                                                <option value="Operations" className="dark:bg-brand-950">Operations</option>
+                                                {masters.departments.map(dept => (
+                                                    <option key={dept.id} value={dept.id} className="dark:bg-brand-950">{dept.name}</option>
+                                                ))}
                                             </select>
                                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover/select:text-brand-500 transition-colors">
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
@@ -608,11 +716,11 @@ export default function EmployeeList() {
                                 Cancel
                             </button>
                             <button
-                                onClick={handleAddEmployee}
-                                className="flex-[2] py-4 bg-brand-600 text-white font-black uppercase text-xs tracking-[0.2em] rounded-2xl shadow-xl shadow-brand-500/20 hover:bg-brand-700 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                            >
-                                Create Employee
-                            </button>
+  type="submit"
+  className="flex-[2] py-4 bg-brand-600 text-white font-black uppercase text-xs tracking-[0.2em] rounded-2xl shadow-xl shadow-brand-500/20 hover:bg-brand-700 hover:scale-[1.02] active:scale-[0.98] transition-all"
+>
+  Create Employee
+</button>
                         </div>
                     </div>
                 </div>,

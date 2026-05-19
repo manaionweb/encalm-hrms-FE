@@ -189,7 +189,7 @@ export default function Reports() {
     const [payrollData, setPayrollData] = useState<any[]>([]);
     const [stats, setStats] = useState<any>({});
 
-    //  FIX: make tenantId available globally in component
+    //  FIX: make.. tenantId available globally in component
     const tenantId = localStorage.getItem("tenantId");
 
     useEffect(() => {
