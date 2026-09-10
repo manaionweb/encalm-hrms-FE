@@ -102,46 +102,46 @@ export default function AccessMasters() {
     }, {});
 
     return (
-        <div className="space-y-6 animate-fade-in relative">
+        <div className="bg-white dark:bg-[#12151C] rounded-[6px] border border-[#E2E6ED] dark:border-gray-800 p-6 sm:p-8 space-y-6 animate-fade-in relative">
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                    <Shield className="text-brand-600" size={24} />
-                    <h2 className="text-xl font-bold dark:text-white">Access Control</h2>
+                    <Shield className="text-[#2C4FD6]" size={24} />
+                    <h2 className="text-[15.5px] font-bold text-[#12151C] dark:text-white">Access Control</h2>
                 </div>
-                <button onClick={handleCreate} className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                <button onClick={handleCreate} className="inline-flex items-center justify-center gap-[7px] bg-[#2C4FD6] hover:bg-[#203FB4] text-white rounded-[6px] text-[13.5px] font-semibold px-[15px] py-[9px] transition-all cursor-pointer">
                     <Plus size={16} /> Create Role
                 </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {roles.map(role => (
-                    <div key={role.id} className="group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 relative hover:shadow-md transition-all">
+                    <div key={role.id} className="group bg-white dark:bg-[#12151C] border border-[#E2E6ED] dark:border-gray-800 rounded-[6px] p-6 relative transition-all">
                         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleEdit(role)} className="p-1.5 text-gray-400 hover:text-brand-600 transition-colors">
+                            <button onClick={() => handleEdit(role)} className="p-1.5 text-[#9AA3B1] hover:text-[#2C4FD6] transition-colors cursor-pointer">
                                 <Edit2 size={16} />
                             </button>
-                            <button onClick={() => setItemToDelete({ id: role.id, name: role.name })} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+                            <button onClick={() => setItemToDelete({ id: role.id, name: role.name })} className="p-1.5 text-[#9AA3B1] hover:text-[#DE350B] transition-colors cursor-pointer">
                                 <Trash2 size={16} />
                             </button>
                         </div>
                         <div className="mb-4">
-                            <h3 className="font-bold text-lg dark:text-white">{role.name}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{role.permissions?.length || 0} Permissions Assigned</p>
+                            <h3 className="text-[13.5px] font-semibold text-[#12151C] dark:text-white">{role.name}</h3>
+                            <p className="text-[11.5px] font-normal text-[#717E95] dark:text-gray-400 mt-0.5">{role.permissions?.length || 0} Permissions Assigned</p>
                         </div>
 
                         <div className="space-y-2">
                             {role.permissions?.slice(0, 3).map((p: any) => (
-                                <div key={p.id} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-                                    <Check size={12} className="text-green-500" /> {p.name}
+                                <div key={p.id} className="flex items-center gap-2 text-xs text-[#5B6472] dark:text-gray-300">
+                                    <Check size={12} className="text-[#1F8A5A]" /> {p.name}
                                 </div>
                             ))}
                             {role.permissions?.length > 3 && (
-                                <div className="text-xs text-brand-600 dark:text-brand-400 font-medium pl-5">
+                                <div className="text-xs text-[#2C4FD6] dark:text-blue-400 font-medium pl-5">
                                     + {role.permissions.length - 3} more...
                                 </div>
                             )}
                             {(!role.permissions || role.permissions.length === 0) && (
-                                <div className="text-xs text-gray-400 italic flex items-center gap-1">
+                                <div className="text-xs text-[#9AA3B1] italic flex items-center gap-1">
                                     <Lock size={12} /> No specific permissions
                                 </div>
                             )}
@@ -153,19 +153,19 @@ export default function AccessMasters() {
             {/* Role Modal */}
             {/* changes made */}
             {showModal && createPortal(
-            <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xl">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-fade-in-up">
-                        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                            <h3 className="text-xl font-bold dark:text-white">{editingRole ? 'Edit Role' : 'Create Role'}</h3>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-900/20 dark:bg-black/60 backdrop-blur-md">
+            <div className="bg-white dark:bg-[#12151C] rounded-[6px] border border-[#E2E6ED] dark:border-gray-800 w-full max-w-4xl max-h-[90vh] flex flex-col animate-scale-in">
+                        <div className="p-5 border-b border-[#E2E6ED] dark:border-gray-800 flex justify-between items-center bg-[#F7F8FA] dark:bg-white/5">
+                            <h3 className="text-base font-bold text-[#12151C] dark:text-white">{editingRole ? 'Edit Role' : 'Create Role'}</h3>
+                            <button onClick={() => setShowModal(false)} className="text-[#9AA3B1] hover:text-[#12151C] dark:hover:text-white transition-colors cursor-pointer"><X size={18} /></button>
                         </div>
 
                         <div className="p-6 overflow-y-auto flex-1 bg-gray-50/50 dark:bg-gray-900/50">
                             <div className="mb-8">
-                                <label className="block text-sm font-bold mb-2 dark:text-gray-300 uppercase tracking-tight">Role Name</label>
+                                <label className="block text-xs font-semibold text-[#5B6472] dark:text-gray-300 mb-1.5 uppercase tracking-tight">Role Name</label>
                                 <input
                                     type="text"
-                                    className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none transition-all"
+                                    className="w-full px-3 py-2 border border-[#E2E6ED] dark:border-gray-700 rounded-[6px] bg-white dark:bg-[#12151C] text-[13.5px] text-[#12151C] dark:text-white outline-none focus:border-[#2C4FD6]"
                                     value={roleName}
                                     onChange={e => setRoleName(e.target.value)}
                                     placeholder="e.g. HR Manager"
@@ -173,12 +173,12 @@ export default function AccessMasters() {
                             </div>
 
                             <div className="mb-8">
-                                <label className="block text-sm font-bold mb-3 dark:text-gray-300 uppercase tracking-tight">Module Access</label>
+                                <label className="block text-xs font-semibold text-[#5B6472] dark:text-gray-300 mb-2 uppercase tracking-tight">Module Access</label>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     {['DASHBOARD', 'ATTENDANCE', 'EMPLOYEE', 'TEAM', 'LEAVE', 'REPORTS', 'MASTERS', 'TASK'].map(module => (
-                                        <label key={module} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedModules.includes(module)
-                                            ? 'bg-brand-50 border-brand-300 dark:bg-brand-900/40 dark:border-brand-500/50'
-                                            : 'bg-white border-gray-100 dark:bg-gray-800 dark:border-gray-700 hover:border-gray-300 shadow-sm'
+                                        <label key={module} className={`flex items-center gap-3 p-3 rounded-[6px] border cursor-pointer transition-all ${selectedModules.includes(module)
+                                            ? 'bg-[#E8ECFC]/40 border-[#2C4FD6] dark:bg-blue-900/20 dark:border-blue-500/50'
+                                            : 'bg-white border-[#E2E6ED] dark:bg-[#12151C] dark:border-gray-800 hover:border-gray-300'
                                             }`}>
                                             <input
                                                 type="checkbox"
@@ -190,16 +190,16 @@ export default function AccessMasters() {
                                                         setSelectedModules([...selectedModules, module]);
                                                     }
                                                 }}
-                                                className="w-4 h-4 rounded text-brand-600"
+                                                className="w-4 h-4 rounded accent-[#2C4FD6]"
                                             />
-                                            <span className="text-xs font-bold capitalize">{module.toLowerCase()}</span>
+                                            <span className="text-xs font-semibold text-[#12151C] dark:text-white capitalize">{module.toLowerCase()}</span>
                                         </label>
                                     ))}
                                 </div>
                             </div>
 
                             <div className="space-y-8">
-                                <h4 className="font-bold text-sm text-gray-900 dark:text-white border-b pb-2 dark:border-gray-700 uppercase tracking-tight">Granular Permissions</h4>
+                                <h4 className="font-semibold text-sm text-[#12151C] dark:text-white border-b border-[#E2E6ED] pb-2 dark:border-gray-800 uppercase tracking-tight">Granular Permissions</h4>
                                 {Object.keys(permissionsByModule).map(module => {
                                     const modulePermissions = permissionsByModule[module];
                                     const allSelected = modulePermissions.every((p: any) => selectedPermissions.includes(p.id));
@@ -215,25 +215,25 @@ export default function AccessMasters() {
                                     };
 
                                     return (
-                                        <div key={module} className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                                        <div key={module} className="bg-white dark:bg-[#12151C] p-5 rounded-[6px] border border-[#E2E6ED] dark:border-gray-800">
                                             <div className="flex justify-between items-center mb-4">
-                                                <h5 className="text-[10px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-[0.2em]">{module}</h5>
-                                                <button onClick={toggleModule} className="text-[10px] font-bold text-gray-400 hover:text-brand-600 uppercase tracking-wider transition-colors">
+                                                <h5 className="text-[10px] font-black text-[#2C4FD6] dark:text-blue-400 uppercase tracking-[0.2em]">{module}</h5>
+                                                <button onClick={toggleModule} className="text-[10px] font-bold text-gray-400 hover:text-[#2C4FD6] uppercase tracking-wider transition-colors cursor-pointer">
                                                     {allSelected ? 'Deselect All' : 'Select All'}
                                                 </button>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                                 {modulePermissions.map((p: any) => (
-                                                    <label key={p.id} className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedPermissions.includes(p.id) ? 'bg-brand-50/50 border-brand-200 dark:bg-brand-900/20 dark:border-brand-500/20' : 'bg-gray-50/50 dark:bg-gray-900/30 border-transparent hover:border-gray-200'}`}>
+                                                    <label key={p.id} className={`flex items-start gap-3 p-3 rounded-[6px] border cursor-pointer transition-all ${selectedPermissions.includes(p.id) ? 'bg-[#E8ECFC]/40 border-[#2C4FD6] dark:bg-blue-900/20 dark:border-blue-500/20' : 'bg-gray-50/50 dark:bg-gray-900/30 border-transparent hover:border-gray-200'}`}>
                                                         <input
                                                             type="checkbox"
-                                                            className="mt-1 w-4 h-4 rounded text-brand-600 focus:ring-brand-500"
+                                                            className="mt-1 w-4 h-4 rounded accent-[#2C4FD6]"
                                                             checked={selectedPermissions.includes(p.id)}
                                                             onChange={() => togglePermission(p.id)}
                                                         />
                                                         <div>
-                                                            <div className="text-sm font-bold dark:text-white leading-none mb-1">{p.name}</div>
-                                                            <div className="text-[10px] text-gray-500 dark:text-gray-400 font-mono">{p.code}</div>
+                                                            <div className="text-xs font-semibold text-[#12151C] dark:text-white leading-none mb-1">{p.name}</div>
+                                                            <div className="text-[10px] text-[#9AA3B1] dark:text-gray-400 font-mono">{p.code}</div>
                                                         </div>
                                                     </label>
                                                 ))}
@@ -244,9 +244,9 @@ export default function AccessMasters() {
                             </div>
                         </div>
 
-                        <div className="p-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3 bg-white dark:bg-gray-800 shadow-xl rounded-b-xl">
-                            <button onClick={() => setShowModal(false)} className="px-6 py-2.5 text-sm text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white font-bold transition-colors">Cancel</button>
-                            <button onClick={handleSave} disabled={loading} className="px-8 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-brand-500/20 transition-all active:scale-95 flex items-center gap-2">
+                        <div className="p-5 border-t border-[#E2E6ED] dark:border-gray-800 flex justify-end gap-3 bg-white dark:bg-[#12151C] rounded-b-[6px]">
+                            <button onClick={() => setShowModal(false)} className="px-5 py-2.5 text-[13.5px] text-[#5B6472] hover:text-[#12151C] dark:text-gray-400 dark:hover:text-white font-semibold transition-colors cursor-pointer">Cancel</button>
+                            <button onClick={handleSave} disabled={loading} className="inline-flex items-center gap-[7px] bg-[#2C4FD6] hover:bg-[#203FB4] text-white text-[13.5px] font-semibold rounded-[6px] px-[18px] py-[9px] transition-all cursor-pointer">
                                 {loading && <Loader2 size={16} className="animate-spin" />}
                                 Save Changes
                             </button>
@@ -258,7 +258,7 @@ export default function AccessMasters() {
             {/* Delete Confirmation Modal (MATCHING THEME) */}
             {itemToDelete && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-[2px] p-4 animate-fade-in">
-                    <div className="bg-[#0f1016] rounded-2xl shadow-2xl w-full max-w-[360px] border-t-4 border-red-600 text-center relative overflow-hidden pb-8 px-6">
+                    <div className="bg-[#0f1016] rounded-[6px] w-full max-w-[calc(100vw-2rem)] sm:max-w-[360px] border-t-4 border-red-600 text-center relative overflow-hidden pb-8 px-5 sm:px-6">
                         <div className="w-20 h-20 bg-[#1c1d26] rounded-full flex items-center justify-center mx-auto mb-6 mt-8">
                             <Trash2 size={32} className="text-red-600" />
                         </div>
@@ -270,14 +270,14 @@ export default function AccessMasters() {
                         <div className="flex gap-4 px-2">
                             <button
                                 onClick={() => setItemToDelete(null)}
-                                className="flex-1 py-3.5 px-4 bg-[#1c1d26] text-white font-bold rounded-xl hover:bg-[#252631] transition-all active:scale-95"
+                                className="flex-1 py-3.5 px-4 bg-[#1c1d26] text-white font-bold rounded-[6px] hover:bg-[#252631] transition-all active:scale-95"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDelete}
                                 disabled={loading}
-                                className="flex-1 py-3.5 px-4 bg-[#ff3b3b] text-white font-bold rounded-xl hover:bg-[#ff4d4d] transition-all shadow-lg shadow-red-500/20 active:scale-95 flex items-center justify-center gap-2"
+                                className="flex-1 py-3.5 px-4 bg-[#ff3b3b] text-white font-bold rounded-[6px] hover:bg-[#ff4d4d] transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
                                 {loading ? <Loader2 size={18} className="animate-spin" /> : "Yes, Delete"}
                             </button>

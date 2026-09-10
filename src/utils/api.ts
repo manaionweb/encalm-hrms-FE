@@ -49,7 +49,7 @@ api.interceptors.response.use(
                 }
 
                 const res = await axios.post(
-                    'http://localhost:3001/api/auth/refresh-token',
+                    `${api.defaults.baseURL || 'http://localhost:3001/api'}/auth/refresh-token`,
                     { refreshToken }
                 );
 
